@@ -405,7 +405,7 @@ if (args$plot_combined==TRUE) {
 #  addLabels(args,regions)
   dev.off()
 } else {
-  # if we don't want to plot a qq plot
+  # if we do want to plot a qq plot
   if (args$no_qq==FALSE) {
     if (args$png==FALSE) {
       pdf(paste(args$OUTFILE,"_qq.pdf",sep=""),

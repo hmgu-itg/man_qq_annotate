@@ -570,14 +570,8 @@ create.mhp.viewports=function(xrange,yrange,chr.ticks,add.label.vp=FALSE,mp=mhpp
 #                      significant than this                                  #
 # gene.search.biotype = vector of gene biotypes to restrict the nearest genes #
 ###############################################################################
-mhp.annotate.peak = function(data,
-                            mp=mhppar(),
-                            manual.labels=NULL,
-                            auto.labels=TRUE,
-                            auto.labels.sigcut=5E-8,
-                            gene.search.biotype=NULL,
-                            padding.factor=0.004) {
-#  print(mp)
+mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRUE,auto.labels.sigcut=5E-8,gene.search.biotype=NULL,padding.factor=0.004) {
+  #  print(mp)
   # Remove NAs and zero pvals
   data=data[complete.cases(data),]
   data=data[p_lrt!=0,]
@@ -594,24 +588,23 @@ mhp.annotate.peak = function(data,
   ydp=600
 
   # The genome size in mbp, this is used to calcualte the xresolution
-#  genome.size=3000000000
-#              2950878797
+  #  genome.size=3000000000
+  #              2950878797
   genome.size=sum(as.numeric(data[,.SD[,max(ps) - min(ps)],.SDcols="ps",by=chr]$V1))
-#  bp.padding=12000000
+  # bp.padding=12000000
   bp.padding=genome.size*padding.factor
 
   # The chromosomes that we will loop throug
-#  chrs=c(1:23)
+  # chrs=c(1:23)
   chrs=sort(unique(data[,chr]))
 
   
   # Make sure we have some chromsomes
-  if (length(chrs)==0) {
+  if(length(chrs)==0) {
     stop("[FATAL] There are no chromsomes to plot!")
   }
 
-  # If the user has supplied manual labels
-  # These will take priority over any auto.labels
+  # If the user has supplied manual labels, these will take priority over any auto.labels
   if (is.null(manual.labels)==FALSE) {
     manual.labels=process.manual.labels(manual.labels,
                                         gene.search.biotype=gene.search.biotype)
@@ -634,8 +627,7 @@ mhp.annotate.peak = function(data,
     manual.labels[sapply(peak_col, FUN=is.null),peak_col:=""]
     manual.labels[is.na(label_col) | is.null(label_col),label_col:="black"]
   }
-#  print("manual.labels")
-#  print(manual.labels)
+    # print(manual.labels)
 
   ## Expects data object to be a data.table containing three named columns
   ## chr, ps and p_lrt, representing 
@@ -647,9 +639,7 @@ mhp.annotate.peak = function(data,
   # and is the maximum observed signal in the data set
   obsmax <- trunc(max(-log10(obspval), na.rm=T))+1
 
-  # This returns the index of the positions if the 
-  # chr,pos sort and is used to get orderd chr,pos
-  # data and pvalue data
+  # This returns the index of the positions of the chr,pos sort and is used to get orderd chr,pos data and pvalue data
   sort.ind <- order(chr, pos) 
   chr <- chr[sort.ind]
   pos <- pos[sort.ind]
@@ -663,8 +653,7 @@ mhp.annotate.peak = function(data,
   newx=rep(NA, xdp*ydp)
   newy=rep(NA, xdp*ydp)
   
-  # Computes the Xresolution, essentially the number of bp in 1 data-point 
-  # space
+  # Computes the X resolution, essentially the number of bp in 1 data-point space
   # Computes the Y resolution, the number of -log10_pvalues in 1 data-point
   # I am not sure what the *2 does here
   xres=(genome.size/xdp)*2
@@ -688,8 +677,7 @@ mhp.annotate.peak = function(data,
   s=1
   
   # Initializing variables for the main loop, not sure what they do
-  # Size store the total base pair range of the data points for each
-  # chromsome
+  # Size store the total base pair range of the data points for each chromsome
   size=0
   size[1:max(unique(chr))]=0
   numpoints=0
@@ -703,8 +691,7 @@ mhp.annotate.peak = function(data,
   ma=0
 
   # t is a list which will be initialised with all the names of the chromsome
-  # and the values will be all the base pair positions for each data point
-  # on a chromsome
+  # and the values will be all the base pair positions for each data point on a chromsome
   t=list()
 
   # Create an empty auto.label.genes data.table, this will be filled with auto
@@ -734,15 +721,11 @@ mhp.annotate.peak = function(data,
     print(i)
     curchr=which(chr == i)
 
-    # If there is no data for the current chromsome, do some stuff that I do
-    # not understand and skip the rest of the loop
+    # If there is no data for the current chromsome, do some stuff that I do not understand and skip the rest of the loop
     if (length(curchr)==0) {
-      # Set the range (or size in bp) for the chromsome to 0
-      # not sure yet why this is offset by 1
+      # Set the range (or size in bp) for the chromsome to 0; not sure yet why this is offset by 1
       size[i+1]=0
-
-      # Also set the number of data points for the current chromosome
-      # to 0
+      # Also set the number of data points for the current chromosome to 0
       numpoints[i+1]=0
       next
     }
@@ -751,13 +734,12 @@ mhp.annotate.peak = function(data,
     curcol=ifelse (i%%2==0, col1, col2)
 
     if(is.null(manual.labels)==FALSE) {
-    # make sure that any manual labels that do not have the peak colour 
-    # defined are set to be coloured the default chromsome colour
-    manual.labels[chr==i & !isColor(peak_col),peak_col:=curcol]
+      # make sure that any manual labels that do not have the peak colour 
+      # defined are set to be coloured the default chromsome colour
+      manual.labels[chr==i & !isColor(peak_col),peak_col:=curcol]
     }
     # We store all the bp positional information for the data points on
-    # the current chromsome in a list entry with the name of the current 
-    # chromosome
+    # the current chromsome in a list entry with the name of the current chromosome
     t[[i]]=pos[curchr]
 
     # We also store the minimum and maximum base pair positions of the data
@@ -806,8 +788,7 @@ mhp.annotate.peak = function(data,
     # grid on the xaxis
     h=hist(t[[i]], breaks=breaks, plot=FALSE)
 
-    # Not sure what this stuff does. I think readmids, is the central 
-    # position 
+    # Not sure what this stuff does. I think realmids is the central position 
     realmid=h$mids-i-offset+mi[i]
     realpeakval=NULL
     realpeaky=NULL
@@ -886,8 +867,7 @@ mhp.annotate.peak = function(data,
         minx=min(subsetx)
         maxx=max(subsetx)
 
-        # This gets a logical vector for for the manual labels that are in the 
-        # current grid
+        # This gets a logical vector for the manual labels that are in the current grid
         labels.in.grid=manual.labels[,chr]==i & manual.labels[,pos]>=minx & manual.labels[,pos]<=maxx
         
         # If we have some manual labels that fall in the current grid then get
@@ -909,7 +889,7 @@ mhp.annotate.peak = function(data,
           # warning and take the first one          
           if (nrow(mt)>1) {
             warning("[WARNING] Peaks too close to label separately! Some information will be lost!")
-#            mt=mt[1,]
+          # mt=mt[1,]
           }
 
           manual.labels[labels.in.grid, ycoord:=ycoords.data]
@@ -947,7 +927,7 @@ mhp.annotate.peak = function(data,
   # If we have submitted some manual labels and have some with data in them
   # then we will join them to the auto labels
   if (is.null(manual.labels)==FALSE && nrow(manual.labels[nchar(label_name)>0,])>0) {
-#    print(auto.label.genes)
+  # print(auto.label.genes)
     auto.label.genes=rbindlist(list(auto.label.genes,manual.labels))
   }
 
@@ -964,7 +944,7 @@ mhp.annotate.peak = function(data,
     setkey(auto.label.genes,mlogp)
     auto.label.genes[,order:=seq(nrow(auto.label.genes),1,-1)]
     setkey(auto.label.genes,order)
-#    print("GOT HERE3")
+  # print("GOT HERE3")
   }
 
   #print("BEFORE UNIQUE")
@@ -973,20 +953,20 @@ mhp.annotate.peak = function(data,
   # we will get the same peaks replicated twice so, I will exclude peaks with
   # the same chr,pos,label_name to prevent this
   setkey(auto.label.genes,auto_peak,chr,pos)
-#  print(auto.label.genes)
+  #  print(auto.label.genes)
   auto.label.genes=unique(auto.label.genes,by=c("chr","label_name"))
 
-#  print("AFTER UNIQUE")
-#  print(auto.label.genes)
+  #  print("AFTER UNIQUE")
+  #  print(auto.label.genes)
 
   newx=na.trim(newx)
   newy=na.trim(newy)
-#  out<-file 
-#  print(auto.label.genes)
+  # out<-file 
+  # print(auto.label.genes)
   # If we have labels to add to the plot we need to make space for them
   # in the plotting space
   if ((auto.labels==TRUE || is.null(manual.labels)==FALSE) && nrow(auto.label.genes)>0) {
-#    print("IN CREATE MHP LABELS")
+    # print("IN CREATE MHP LABELS")
     # Create the whole region viewport taking into account the
     # labels
     create.mhp.viewports(c(min(newx),max(newx)),
@@ -1006,7 +986,7 @@ mhp.annotate.peak = function(data,
                          add.label.vp=FALSE,
                          mp=mp )
   }
-#  print(auto.label.genes)
+  # print(auto.label.genes)
   # Now move back to the plot region and actually plot some points
   seekViewport("plotRegion")
 
@@ -1030,8 +1010,8 @@ mhp.annotate.peak = function(data,
 
   # If we want to add a significance threshold line
   if (mp[['sig.thresh.line.plot']]==TRUE) {
-#    print("IN HERE!!!!!!!!!!!!!!!!!")
-#    print(class(mp[['sig.thresh.line']]))
+  # print("IN HERE!!!!!!!!!!!!!!!!!")
+  # print(class(mp[['sig.thresh.line']]))
    grid.lines(y=unit(c(-log10(mp[['sig.thresh.line']]),-log10(mp[['sig.thresh.line']])),"native"),gp=gpar(lty="dashed",col=mp[['default.label.col']]) )
   }
 
@@ -1039,7 +1019,7 @@ mhp.annotate.peak = function(data,
   # ARTHUR: if there is anything to plot
  if(nrow(auto.label.genes)>0){
   plot.mhp.poi(auto.label.genes,mp=mp)
-}
+  }
 }
 
 
