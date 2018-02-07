@@ -1,6 +1,6 @@
-#!/software/R-3.2.2/bin/Rscript
-#.libPaths(Sys.getenv("R_LIBS”))
-require(argparse)
+
+###!/software/R-3.2.2/bin/Rscript
+
 ###############################################################################
 # A program to plot Manhattan and QQ plots                                    #
 ###############################################################################
@@ -12,24 +12,23 @@ require(argparse)
 suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(data.table))
 
-#.libPaths(Sys.getenv("R_LIBS”))
 
-# Get the path to my R functions
-funct_path=Sys.getenv("CF9_R_LIBS")
-funct_path="/nfs/users/nfs_a/ag15/scripts"
+funct_path="/nfs/users/nfs_s/sh29/repos/man_qq"
+
 # Now make sure that the function files can be found and that they can  be 
 # accessed and sourced in
-#my_libs=c("utility_functions.R")
 my_libs=c("utility_functions.R","MQ_Art.R")
+
 # Loop through all the libraries I want to source in
 print(funct_path)
 print(my_libs)
+
 for (i in my_libs ) {
   # Check that the function path exists and is readable
   i_path=paste(funct_path,i,sep="/")
   
   # Make sure the files exist and we can access them
-print(paste("Testing if is loadable:", i_path))
+  print(paste("Testing if is loadable:", i_path))
   if (file.access(i_path,4)==-1) {
     stop(paste("[FATAL] Can't find",
                i_path,
@@ -47,7 +46,7 @@ print(paste("Testing if is loadable:", i_path))
 }
 
 print("Main functions sourced.")
-#source("~ag15/MQ_ArtT.R")
+#source("~ag15/MQ_ArtT.R") ???
 
 # Check that the function path exists and is readable
 #mqart=paste(funct_path,"MQ_Art.R",sep="/")
@@ -215,6 +214,9 @@ parser$add_argument("--manh-height", type="integer",default=15,
                     help="The height of the manhattan plot in cm",
                     metavar="[integer]")
 
+parser$add_argument("--build", type="character",default="hg38",
+                    help="The genome build the positions refer to",
+                    metavar="hg[number]")
 
 
 # The input file used to create the plots
@@ -398,9 +400,12 @@ if (args$plot_combined==TRUE) {
   mhp.annotate.peak(pd,
                     manual.labels=man.labels,
                     auto.labels=args$auto_label,
-                    mp=mhppar(sig.thresh.line.plot=TRUE,sig.thresh=args$sig_thresh,sig.thresh.line=args$sig_thresh_line),
+                    mp=mhppar(sig.thresh.line.plot=TRUE,
+                    sig.thresh=args$sig_thresh,
+                    sig.thresh.line=args$sig_thresh_line),
                     auto.labels.sigcut=5E-40,
-                    gene.search.biotype=args$biotypes)
+                    gene.search.biotype=args$biotypes,
+                    build=build)
 
 #  addLabels(args,regions)
   dev.off()

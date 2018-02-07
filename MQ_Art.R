@@ -3,7 +3,7 @@ suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(ggplot2))
 
 # Get the path to my R functions
-funct_path="~ag15/scripts"
+funct_path="~sh29/repos/man_qq"
 
 # Now make sure that the function files can be found and that they can  be 
 # accessed and sourced in
@@ -382,7 +382,7 @@ process.manual.labels=function(manual.labels,
 #        is.na(manual.labels[i,label_name])==TRUE || 
 #        nchar(manual.labels[i,label_name])==0) {
       if (manual.labels[i,label_name]=="<AUTO>") {
-        ng=getNearestGene(manual.labels[i,chr],manual.labels[i,pos],biotypes=gene.search.biotype)
+        ng=getNearestGene(manual.labels[i,chr],manual.labels[i,pos],biotypes=gene.search.biotype,build=build)
           
         if (nrow(ng)>0) {
           gene_name=ng[1,external_name]
@@ -412,7 +412,8 @@ process.manual.labels=function(manual.labels,
 ###############################################################################
 process.auto.labels=function(peaks,
                              mp=mhppar(),
-                             gene.search.biotype=NULL) {
+                             gene.search.biotype=NULL,
+                             build="hg38") {
   # Create an empty autolabels data.table
   auto.labels=data.table(matrix(nrow=1,
                                 ncol=length(label.cols),
@@ -425,7 +426,7 @@ process.auto.labels=function(peaks,
 #  print(peaks)
   if (nrow(peaks)>0) {
     for (i in 1:nrow(peaks)) {
-      ng=getNearestGene(peaks[i,chr],peaks[i,pos],biotypes=gene.search.biotype)
+      ng=getNearestGene(peaks[i,chr],peaks[i,pos],biotypes=gene.search.biotype, build=build)
     
       if (nrow(ng)>0) {
         chr=peaks[i,chr]
@@ -570,7 +571,7 @@ create.mhp.viewports=function(xrange,yrange,chr.ticks,add.label.vp=FALSE,mp=mhpp
 #                      significant than this                                  #
 # gene.search.biotype = vector of gene biotypes to restrict the nearest genes #
 ###############################################################################
-mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRUE,auto.labels.sigcut=5E-8,gene.search.biotype=NULL,padding.factor=0.004) {
+mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRUE,auto.labels.sigcut=5E-8,gene.search.biotype=NULL,padding.factor=0.004,build="hg38") {
   #  print(mp)
   # Remove NAs and zero pvals
   data=data[complete.cases(data),]
@@ -607,7 +608,7 @@ mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRU
   # If the user has supplied manual labels, these will take priority over any auto.labels
   if (is.null(manual.labels)==FALSE) {
     manual.labels=process.manual.labels(manual.labels,
-                                        gene.search.biotype=gene.search.biotype)
+                                        gene.search.biotype=gene.search.biotype,build=build)
 
     # Now we want to check for duplicated positions in our data.table
     lab.counts=manual.labels[,.N,by=list(chr,pos)]
@@ -649,7 +650,7 @@ mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRU
   # resolution. So this vector represents the "resolution" of the plot. This
   # is not the image resolution, rather it is the number of data points that
   # will be represented on the plot. These are pre-created as it will be faster
-  # updating the elements of a predefined vector than concatinating
+  # updating the elements of a predefined vector than concatenating
   newx=rep(NA, xdp*ydp)
   newy=rep(NA, xdp*ydp)
   
@@ -921,7 +922,7 @@ mhp.annotate.peak = function(data,mp=mhppar(),manual.labels=NULL,auto.labels=TRU
   if (auto.labels==TRUE && nrow(autopeaks)>0) {
     auto.label.genes=process.auto.labels(autopeaks,
                                     mp=mp,
-                                    gene.search.biotype=gene.search.biotype)
+                                    gene.search.biotype=gene.search.biotype, build=build)
   }
 
   # If we have submitted some manual labels and have some with data in them
