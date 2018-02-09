@@ -134,7 +134,9 @@ return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labp
 get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   # expects an object from the mhp function
   ret=NULL
-  for(xpos in unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])){
+  sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
+  if(length(sig>1)){
+  for(xpos in sig){
     dict_entry=retm$posdict[retm$posdict$coord==xpos,];
     mmin=dict_entry$min;
     mmax=dict_entry$max;
@@ -149,6 +151,9 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
   ret$build=build
   return(ret)
+  }else{
+    return(data.table(chr=NULL, ps=NULL, a1=NULL, a2=NULL, plotpos=NULL, ploty=NULL))
+  }
 }
 
 
@@ -421,6 +426,7 @@ dev.off()
 pdf(outman, width=12, height=11)
 retm=mhp(d$chr, d$ps, d$p_score)
 peaks=get_peaks_to_annotate(retm)
+if(nrow(peaks)==0){peaks=NULL}else{
 print(peaks)
 context=as.data.frame(t(apply(peaks, 1, function(x){
   u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
@@ -452,7 +458,7 @@ peaks$pch[peaks$consequence %in% intronic]=18
 peaks$col[peaks$consequence %in% intronic]="brown"
 peaks$pch[peaks$consequence %in% intergenic]=19
 peaks$col[peaks$consequence %in% intergenic]="darkgray"
-
+}
 plot_manhattan(retm, peaks)
 dev.off()
 
