@@ -552,7 +552,7 @@ runEnsemblQuery=function(query,allow.tries=2) {
   while(tries != allow.tries && retry==TRUE) {
     retry=FALSE
     data=tryCatch({
-              data=fromJSON(file=query)
+              data=fromJSON(query)
               },
              warning=function(war) {
                 write(sprintf("[WARN] The query %s generated the following warning: %s",query,war$message),stdout())
