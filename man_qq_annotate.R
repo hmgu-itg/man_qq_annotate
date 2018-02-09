@@ -1,7 +1,7 @@
 #!/software/bin/Rscript --vanilla
 
 args = commandArgs(trailingOnly=TRUE)
-
+library(data.table)
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
@@ -152,7 +152,7 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   ret$build=build
   return(ret)
   }else{
-    return(data.table(chr=NULL, ps=NULL, a1=NULL, a2=NULL, plotpos=NULL, ploty=NULL))
+    return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
 }
 
@@ -206,69 +206,6 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 
 library(httr)
 library(jsonlite)
-
-
-
-get_variant_context=function(chr,pos,a1, a2,build=38) {
-    alleles=c(a1, a2)
-    if(build==38) {
-      server="http://rest.ensembl.org"
-      } else if(build==37) {
-        server="http://grch37.rest.ensembl.org"
-      } else {
-        print("Some warning here")
-      }
-    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
-    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-    stop_for_status(r)
-    restr=fromJSON(toJSON(content(r)))
-    
-    # if it's intergenic find closest gene
-    if(length(restr)==0) {
-      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
-      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      stop_for_status(r)
-      restr=fromJSON(toJSON(content(r)))
-      restr=restr[restr$biotype=="protein_coding",]
-      restr$dist1=abs(pos-unlist(restr$start))
-      restr$dist2=abs(pos-unlist(restr$end))
-      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-      dist=min(restr$dist)
-
-      # get consequence
-      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      # stop_for_status(r)
-      # restsnp=fromJSON(toJSON(content(r)))
-      cons=data.table()
-      for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
-      }
-      return(c(gene,dist,cons$most_severe_consequence[[1]]))
-
-    # if it's inside a gene, do stuff
-    } else {
-      restr=restr[restr$biotype=="protein_coding",]
-      restr$dist1=abs(pos-unlist(restr$start))
-      restr$dist2=abs(pos-unlist(restr$end))
-      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-      dist=min(restr$dist)
-      cons=data.table()
-      for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
-      }
-      return(c(gene,dist,cons$most_severe_consequence))
-
-    }
-    
-}
-
 
 ###############################################################################
 # A generalised function for running a query against the ensembl rest API,this#
@@ -324,6 +261,61 @@ if(!("error" %in% names(vep_data))) {
   return(vep_data)
 }
 
+}
+
+get_variant_context=function(chr,pos,a1, a2,build=38) {
+    alleles=c(a1, a2)
+    if(build==38) {
+      server="http://rest.ensembl.org"
+      } else if(build==37) {
+        server="http://grch37.rest.ensembl.org"
+      } else {
+        print("Some warning here")
+      }
+    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
+    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+    stop_for_status(r)
+    #return(content(r))
+    restr=fromJSON(toJSON(content(r), null="null"))
+    
+    # if it's intergenic find closest gene
+    if(length(restr)==0) {
+      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
+      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      stop_for_status(r)
+      restr=fromJSON(toJSON(content(r)))
+      restr=restr[restr$biotype=="protein_coding",]
+      restr$dist1=abs(pos-unlist(restr$start))
+      restr$dist2=abs(pos-unlist(restr$end))
+      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      dist=min(restr$dist)
+
+      # get consequence
+      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
+      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # stop_for_status(r)
+      # restsnp=fromJSON(toJSON(content(r)))
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+      }
+      return(c(gene,dist,cons$most_severe_consequence[[1]]))
+
+    # if it's inside a gene, do stuff
+    } else {
+      restr$dist=0
+      gene=paste(unlist(restr$external_name), collapse=",")
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+      }
+      return(c(gene,0,cons$most_severe_consequence))
+
+    }
+    
 }
 
 lambdaCalc = function(pval,round=NULL) {
@@ -395,8 +387,8 @@ library(data.table)
 
 readcmd=paste("zcat ", args[1], sep=" ")
 
-outqq=paste(args[1], ".qq.pdf", sep="")
-outman=paste(args[1], ".man.pdf", sep="")
+outqq=paste(args[2], ".qq.pdf", sep="")
+outman=paste(args[2], ".man.pdf", sep="")
 
 d=fread(readcmd, select=c(1,3,5,6,14))
 
@@ -427,17 +419,20 @@ pdf(outman, width=12, height=11)
 retm=mhp(d$chr, d$ps, d$p_score)
 peaks=get_peaks_to_annotate(retm)
 if(nrow(peaks)==0){peaks=NULL}else{
-print(peaks)
-context=as.data.frame(t(apply(peaks, 1, function(x){
+
+context=apply(peaks, 1, function(x){
   u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
   if(length(u)<3){u[3]="unknown"};
   return(u);
-  })))
-print(context)
+  })
+
+context=as.data.frame(t(context))
+
 colnames(context)=c("gene", "distance", "consequence")
 context$distance=as.numeric(as.character(context$distance))
 peaks=cbind(peaks, context)
-peaks$truelabels=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+peaks$truelabels=peaks$gene
+peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
 peaks$pch=15
 peaks$col="forestgreen"
 lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
