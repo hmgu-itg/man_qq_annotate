@@ -1,461 +1,498 @@
+#!/software/bin/Rscript --vanilla
 
-###!/software/R-3.2.2/bin/Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
+  ##Manhat plot
+  ## Expects data object to be a list containing three named columns
+  ## chr, ps and p_lrt, representing 
+  obspval <- as.numeric(p)
+  chr <- as.numeric(chr)
+  pos <- as.numeric(ps)
+  print(length(chr))
+  print(length(pos))
+  obsmax <- trunc(max(-log10(obspval)))+1
+  sort.ind <- order(chr, pos) 
+  chr <- chr[sort.ind]
+  pos <- pos[sort.ind]
+  obspval <- obspval[sort.ind]
+  
+  ## Two main vectors for new coordinates, should not be more than picture resolution
+  newx=rep(NA, X_RES*Y_RES)
+  newy=rep(NA, X_RES*Y_RES)
+  size=0
+  mi=0
+  ma=0
+  t=list()
+  posdict=list()
+
+  
+  xres=(3000000000/X_RES)*2
+  yres=(obsmax/Y_RES)*2
+  breaksy=seq(0, obsmax, by=yres)
+  ## Transforming the p-values and defining plot colors
+  locY = -log10(obspval)
+  col=rep(NA, X_RES*Y_RES)
+  col1=rgb(0,0,108,maxColorValue=255)
+  col2=rgb(100,149,237,maxColorValue=255)
+  col3=rgb(0,205,102,maxColorValue=255)
+  coli=rgb(255, 255, 255, maxColorValue=255, alpha=0)
+  posi=1
+  s=1
+  
+  
+  ## Initializing variables for the main loop
+  size=0
+  numpoints=0
+  labpos=0
+  
+  
+  for ( i in 1:22 ){
+    curchr= which(chr == i)
+    curcol=ifelse (i%%2==0, col1, col2)
+    
+    t[[i]]= pos[curchr]
+    
+    # min and max pos and size of cur chr
+    mi[i]= min(t[[i]])
+    ma[i]= max(t[[i]])
+    size[i+1]= ma[i]-mi[i]
+    numpoints[i+1]= length(t[[i]])
+    ## Correcting positions: subtracting the start offset and adding length of previous chromosomes.
+    ## Elements of T should now be continuous (notice that i is a sum.)
+    offset= sum(size[1:i])
+
+    ## the reassignment permanently destroys all positions so we have to save them
+    posdict[[i]]=data.frame(pos=t[[i]])
+    t[[i]]= (t[[i]]-mi[i])+offset+i
+    posdict[[i]]$newpos=t[[i]]
+    ## Label positions (for later)
+    labpos[i]= offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
+    
+    
+    ## Create x grid for current chromosome
+    topvalue= (offset+size[i+1]+i)
+    breaks= seq((offset+i), topvalue, by=xres)
+    
+    
+    ## seq does not go till the end if by is specified
+    if(breaks[length(breaks)] != topvalue){breaks=c(breaks, topvalue)}
+    
+    ## compute histogram of SNPs according to grid
+    h= hist(t[[i]], breaks=breaks, plot=FALSE)
+    
+    # add in the hist coordinates for reference (multiplies exec time by 2 :/)
+    posdict[[i]]$poscat=cut(posdict[[i]]$newpos, breaks=breaks, labels=h$mids)
+    posdict[[i]]$poscat=as.numeric(as.character(posdict[[i]]$poscat))+((i-1)*12000000)
+    posdict[[i]]$chr=i
+    ## For each interval in this chromosome
+    ##  -get all corresponding y values
+    ##	-compute histogram along y grid
+    ##	-fill non-zero intervals with single middle value
+    
+    baseoffset= sum(numpoints[1:i])
+    
+    for( j in 1:(length(h$counts)) ){
+      suboffset= sum(h$counts[1:j])-h$counts[j]+baseoffset
+      subset= locY[(suboffset+1):(suboffset+h$counts[j])]
+      
+      
+      hy= hist(subset, breaks=breaksy, plot=FALSE)
+      
+      
+      addendum= hy$mids[hy$counts>0]
+      l= length(addendum)
+      if(l==0){next}
+      newx[posi:(posi+l-1)]=rep(h$mids[j], l)+((i-1)*12000000)
+      newy[posi:(posi+l-1)]=addendum
+      colvect=rep(curcol, l)
+      colvect[addendum>-log10(signif)]=col3
+      col[posi:(posi+l-1)]=colvect
+      
+      
+      posi= posi+l;
+    }
+    
+    
+  }
+  posdict=do.call("rbind", posdict)
+  u=aggregate(posdict$pos, by=list(posdict$chr, posdict$poscat), FUN=min)
+  v=aggregate(posdict$pos, by=list(posdict$chr, posdict$poscat), FUN=max)
+  m=merge(u, v, by=c("Group.1", "Group.2"))
+  posdict=m
+  colnames(posdict)=c("chr", "coord", "min", "max")
+
+  # Remove trailing NAs
+  library(zoo)
+  newx=na.trim(newx)
+  newy=na.trim(newy)
+  col=na.trim(col)
+return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))  
+  
+}
+
+get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
+  # expects an object from the mhp function
+  ret=NULL
+  for(xpos in unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])){
+    dict_entry=retm$posdict[retm$posdict$coord==xpos,];
+    mmin=dict_entry$min;
+    mmax=dict_entry$max;
+    chr=dict_entry$chr;
+    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax & d$p_score<signif,];
+    peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
+    peakdata=peakdata[1,];
+    peakdata$plotpos=xpos
+    peakdata$ploty=-log10(peakdata$p_score)
+    ret=rbind(ret,peakdata)
+  }
+  ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
+  ret$build=build
+  return(ret)
+}
+
+
+plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8, MAX_NUM_PEAKS=30){
+  yl=ifelse(!is.null(annotation_object), 1.5*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
+
+  print(max(manhattan_object$newcoords$y))
+  plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
+    pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
+    axes=F,bty="n", ylim=c(0, yl))
+  if(!is.null(annotation_object)){
+    segments(x0=annotation_object$plotpos, 
+      y0=annotation_object$ploty, 
+      y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
+      espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
+      labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),
+        by=espacement/MAX_NUM_PEAKS)
+      
+      labelpos=apply(annotation_object, 1, function(x){
+        if(length(labelslots)==0){print("Error: too many peaks.");return(x["plotpos"])}
+        slotdist=abs(labelslots-as.numeric(x["plotpos"]))
+        idx=(1:length(slotdist))[slotdist==min(slotdist)]
+        print(idx)
+        ret=labelslots[idx]
+        print(ret)
+        print(labelslots)
+        labelslots<<-labelslots[-idx]
+        print(labelslots)
+        return(ret)
+        })
+        
+      segments(x0=annotation_object$plotpos,x1=labelpos, 
+        y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
+        lty=2, lwd=2, col="lightgray")
+      text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
+        srt=45, cex=1.4, pos=4, font=2)
+      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos))
+        , pch=annotation_object$pch, bg=annotation_object$col, col=annotation_object$col, font=2, cex=1.5)
+  }
+  abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
+    axis(2,las=1,cex=1.5)
+  for (i in 1:22){
+    pp= ifelse(i %% 2 == 0, 0, 1)
+    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=1.5)
+  }
+  mtext("Chromosome",1,at=1,cex=1.5,line=0)
+
+}
+
+
+library(httr)
+library(jsonlite)
+
+
+
+get_variant_context=function(chr,pos,a1, a2,build=38) {
+    alleles=c(a1, a2)
+    if(build==38) {
+      server="http://rest.ensembl.org"
+      } else if(build==37) {
+        server="http://grch37.rest.ensembl.org"
+      } else {
+        print("Some warning here")
+      }
+    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
+    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+    stop_for_status(r)
+    restr=fromJSON(toJSON(content(r)))
+    
+    # if it's intergenic find closest gene
+    if(length(restr)==0) {
+      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
+      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      stop_for_status(r)
+      restr=fromJSON(toJSON(content(r)))
+      restr=restr[restr$biotype=="protein_coding",]
+      restr$dist1=abs(pos-unlist(restr$start))
+      restr$dist2=abs(pos-unlist(restr$end))
+      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      dist=min(restr$dist)
+
+      # get consequence
+      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
+      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # stop_for_status(r)
+      # restsnp=fromJSON(toJSON(content(r)))
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+      }
+      return(c(gene,dist,cons$most_severe_consequence[[1]]))
+
+    # if it's inside a gene, do stuff
+    } else {
+      restr=restr[restr$biotype=="protein_coding",]
+      restr$dist1=abs(pos-unlist(restr$start))
+      restr$dist2=abs(pos-unlist(restr$end))
+      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      dist=min(restr$dist)
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+      }
+      return(c(gene,dist,cons$most_severe_consequence))
+
+    }
+    
+}
+
 
 ###############################################################################
-# A program to plot Manhattan and QQ plots                                    #
+# A generalised function for running a query against the ensembl rest API,this#
+# just has a bunch of error handling stuff in it                              #
 ###############################################################################
-# Add circles around points of interest
-# allow graphical parameters to be changed from the command line, via a graphical config file
-# sort out the significance threshold lines
+runEnsemblQuery=function(query,allow.tries=2) {
+  data=NULL
+  tries=0
+  retry=TRUE
+  while(tries != allow.tries && retry==TRUE) {
+    retry=FALSE
+    data=tryCatch({
+              data=fromJSON(query)
+              },
+             warning=function(war) {
+                write(sprintf("[WARN] The query %s generated the following warning: %s",query,war$message),stdout())
+                return(NULL)
+             },
+             error=function(err) {
+               write(sprintf("[ERROR] The query %s generated the following warning: %s",query,err$message),stdout())
+               return(NULL)
+             }
+    )
 
-
-suppressPackageStartupMessages(library(argparse))
-suppressPackageStartupMessages(library(data.table))
-
-
-funct_path="/nfs/users/nfs_s/sh29/repos/man_qq"
-
-# Now make sure that the function files can be found and that they can  be 
-# accessed and sourced in
-my_libs=c("utility_functions.R","MQ_Art.R")
-
-# Loop through all the libraries I want to source in
-print(funct_path)
-print(my_libs)
-
-for (i in my_libs ) {
-  # Check that the function path exists and is readable
-  i_path=paste(funct_path,i,sep="/")
-  
-  # Make sure the files exist and we can access them
-  print(paste("Testing if is loadable:", i_path))
-  if (file.access(i_path,4)==-1) {
-    stop(paste("[FATAL] Can't find",
-               i_path,
-               "library (or it is not readable), ensure",
-               i_path,
-               "is set in your .bashrc !"),sep="")
-  }
-  
-  # Source in the functions required to do the fast manhattan and q plots
-  # I should really drop this into a try - catch block
-  source(i_path)
-  #  tryCatch(source(i_path),
-  #           error = function(e) e,
-  #           finally = stop(sprintf("[FATAL] Problem sourcing %s!",i_path)))
-}
-
-print("Main functions sourced.")
-#source("~ag15/MQ_ArtT.R") ???
-
-# Check that the function path exists and is readable
-#mqart=paste(funct_path,"MQ_Art.R",sep="/")
-
-#if (file.access(mqart,4)==-1) {
-#  stop("[FATAL] Can't find MQ_Art.R library (or it is not readable), ensure CF9_R_LIBS is set in your .bashrc !")
-#}
-
-# Source in the functions required to do the fast manhattan and qq plots
-#source(mqart)
-
-# # Now define a function that will search for the correct column names 
-# # and return the column number
-# getColNames = function(header,args) {
-#   colnos=list()
-  
-#   errors=FALSE
-#   # Find the pvalue column
-#   for (cn in c("pval_col","pos_col","chr_col")) {
-# #    print(cn)
-#     count=table(header %in% args[[cn]])
-# #    print(count)
-    
-#     if (is.na(count['TRUE'])) {
-#       errors=TRUE
-#       write(paste("[FATAL] Can't find: ",cn,sep=""),stderr())
-#     } else if (count['TRUE'] > 1) {
-#       errors=TRUE
-#       write(paste("[FATAL] Found",count['TRUE'],cn,"columns"),stderr())
-#     } else {
-#       colnos[[cn]]=which(header==args[[cn]])
-#     }
-
-#   }
-  
-# #  print(colnos)
-#   if (errors==TRUE) {
-#     stop("[FATAL] Can't find all the required columns!")
-#   }
-# #  count=table(header %in% args$pval_col)
-# #  print(count['FALSE'])
-# #  print(is.na(count['TRUE']))
-# #  if (header %in% args$pval_col) {
-    
-# #  }
-#   return(colnos)
-# }
-
-
-# # A function to control addional labelling on the plot
-# addLabels = function(args,regions) {
-#   if (nrow(regions) > 0) {
-#     if (nchar(args$label)>0) {
-#       mtext(sprintf("%s; Excluded: %s",args$label,paste(regions$region,collapse=",")),
-#             side=3,
-#             at=0,
-#             cex=1.5,
-#             adj=0)
-#     } else {
-#       mtext(args$label,
-#             side=3,
-#             at=0,
-#             cex=1.5,
-#             adj=0)
-#     }
-#   } else {
-#     mtext(args$label,
-#           side=3,
-#           at=0,
-#           cex=1.5,
-#           adj=0)
-#   }
-# }
-
-
-# create parser object
-parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
-
-parser$add_argument("-x", 
-                    "--exclude-regions", 
-                    type="character",
-                    help="A comma separated list of regions to exclude from the data before plotting, should be CHR:STPOS-ENDPOS format",
-                    metavar="[character]")
-
-parser$add_argument("--chr-col", 
-                    type="character",
-                    default="chr",
-                    help="The column NAME for the chromosome column, default chr",
-                    metavar="[character]")
-
-parser$add_argument("--pval-col", 
-                    type="character",
-                    default="pval",
-                    help="The column NAME for the chromosome column, default pval",
-                    metavar="[character]")
-
-parser$add_argument("--pos-col", 
-                    type="character",
-                    default="pos",
-                    help="The column NAME for the chromosome column, default pos",
-                    metavar="[character]")
-
-parser$add_argument("--sig-thresh", 
-                    type="double",
-                    default=5E-08,
-                    help="The significance threshold above which points will appear green",
-                    metavar="[DOUBLE]")
-
-parser$add_argument("--sig-thresh-line", 
-                    type="double",
-                    default=-1.0,
-                    help="The significance threshold for the line",
-                    metavar="[DOUBLE]")
-
-parser$add_argument("--title", 
-                    type="character",
-                    default="",
-                    help="An optional text title to add to each plot",
-                    metavar="[character]")
-
-parser$add_argument("-s", 
-                    "--plot-combined", 
-                    action="store_true",
-                    help="Do you want separate manhattan and qq plots to be plotted as opposed to combined plot"
-                    )
-
-parser$add_argument("-m",
-                    "--manual-labels",
-                    type="character",
-                    help="The path to a file containing all the data to plot manual labels on the MH plot. Should have cols: chr,pos,label_colour,hightlight,peak_colour,label_name")
-
-parser$add_argument("--auto-label", action="store_true",
-                    help="Should we automatically find the nearest gene for top peaks")
-
-parser$add_argument("-b",
-                    "--biotypes",
-                    type="character",
-                    help="A comma separated list of biotypes to restrict the gene searches")
-
-parser$add_argument("--pdf", action="store_false", default=TRUE,
-                    dest="png",help="Should the output be a pdf file")
-
-parser$add_argument("--png", action="store_true",
-                    help="Should the output be a png file (the default)")
-
-parser$add_argument("--no-mh", action="store_true", default=FALSE,
-                    help="Should I only plot a qq plot")
-
-parser$add_argument("--no-qq", action="store_true",default=FALSE,
-                    help="Should I only plot a mh plot")
-
-parser$add_argument("--qq-width", type="integer",default=15,
-                    help="The width of the QQ plot in cm",
-                    metavar="[integer]")
-
-parser$add_argument("--qq-height", type="integer",default=15,
-                    help="The height of the QQ plot in cm",
-                    metavar="[integer]")
-
-parser$add_argument("--manh-width", type="integer",default=20,
-                    help="The width of the manhattan plot in cm",
-                    metavar="[integer]")
-
-parser$add_argument("--manh-height", type="integer",default=15,
-                    help="The height of the manhattan plot in cm",
-                    metavar="[integer]")
-
-parser$add_argument("--build", type="character",default="hg38",
-                    help="The genome build the positions refer to",
-                    metavar="hg[number]")
-
-
-# The input file used to create the plots
-parser$add_argument("INFILE", nargs=1, help="Input file name, can be gzip file (detected from extension)")
-
-# The input file used to create the plots
-parser$add_argument("OUTFILE", nargs=1, help="Output file name (with no file extension)")
-
-args <- parser$parse_args()
-#print(args)
-#q()
-
-# If we have seleected not to draw anything then die
-if (args$no_qq==TRUE && args$no_mh==TRUE) {
-  stop("[FATAL] You have selected --no-qq and --no-mh, nothing to do!")
-}
-
-# Now check that we have not got --plot-combined along with --no-mh --no-qq
-if (args$plot_combined==TRUE && (args$no_qq==TRUE || args$no_mh==TRUE)) {
-  stop("[FATAL] You have selected --plot-combined with --no-qq or --no-mh!")
-}
-
-if (file.access(args$INFILE,4)==-1) {
-  stop(sprintf("[FATAL] Can't find %s input file (or it is not readable)!\n",args$INFILE))
-}
-
-# Get the base directory for output file and check that it exists
-base_dir=dirname(args$OUTFILE)
-if (file.access(base_dir,2)==-1) {
-  stop(sprintf("[FATAL] The base directory for output %s does not exist (or it is not writable)!\n",base_dir))
-}
-
-# If we have chosen to exclude some regions then check that the regions have
-# valid names
-regions=data.table()
-if (is.null(args$exclude_regions)==FALSE) {
-  # If there are multiple regions to exclude they will be comma separated
-  # so split them up
-  args$exclude_regions=unlist(strsplit(gsub("\\s+","",args$exclude_regions,perl=TRUE),",") )
-  
-  # Loop through the custom regions supplied and split them up
-  for (i in args$exclude_regions) {
-    reg=unlist(strsplit(i,":") )  
-    
-    # Now check that the custom region sting is the correct format
-    # First I will check that we have 2 elements in the vector:
-    # [1] chr [2] startpos-endpos
-    if (length(reg) != 2) {
-      stop(paste("[FATAL] Bad format custom region: ",i,sep=""))
+    if (is.null(data)==TRUE) {
+      retry=TRUE
     }
-    
-    # Now check that the we have a sensible chromosome, I am not clever enough 
-    # to dream up a regular expression to do this in one go!
-    if ( regexpr("^[XY]$",reg[1]) == -1 && 
-           regexpr("^[1-9]$",reg[1]) == -1 &&
-           regexpr("^1[0-9]$|^2[0-2]$",reg[1]) == -1 ) {
-      stop(paste("[FATAL] The chromsome does not make sense:",reg[1]))
+    tries=tries+1
+  }
+  return(data)
+}
+
+
+
+getVepSnp=function(chr,pos,allele,build=38,
+                   name=NULL,
+                   query="vep/human/region/%i:%i-%i/%s?content-type=application/json",
+                   allow.tries=2) {
+  if( build == 38) {
+    server="http://rest.ensembl.org"
+    } else if( build == 37) {
+      server="http://grch37.rest.ensembl.org"
+    }  
+
+  if (is.null(name)==TRUE) {
+    name=sprintf("%i:%i",chr,pos)
+  }
+  vep_query=sprintf(query,chr,pos,pos,allele)
+  r=GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
+  vep_data=fromJSON(toJSON(content(r)))
+
+if(!("error" %in% names(vep_data))) {
+  return(vep_data)
+}
+
+}
+
+lambdaCalc = function(pval,round=NULL) {
+  lambda = qchisq(median(pval, na.rm=TRUE),1, lower.tail=FALSE)/0.456
+
+  if (is.null(round)==FALSE) {
+    lambda=round(lambda,round)
+  }
+  return(lambda)
+}
+
+## Function added by Arthur
+isColor <- function(x) {
+     sapply(x, function(X) {
+         tryCatch(is.matrix(col2rgb(X)), 
+                  error = function(e) FALSE)
+         })
+     }
+
+qqplot = function(data, X_GRID=800, Y_GRID=800){
+  ### QQ plot
+  ## Expects data to be a vector of p values
+  obspval <- sort(data)
+  nrows=length(data)
+  logobspval <- -(log10(obspval))
+  exppval <- c(1:length(obspval))
+  logexppval <- -(log10( (exppval-0.5)/length(exppval)))
+  obsmax <- trunc(max(logobspval))+1
+  expmax <- trunc(max(logexppval))+1
+  
+  yres=(max(logobspval)-min(logobspval))/Y_GRID
+  xres=(max(logexppval)-min(logexppval))/X_GRID
+  ymax=max(logobspval)
+  xmax=max(logexppval)
+  index=1
+  indey=1
+  newx=rep(NA, X_GRID)
+  newy=rep(NA, X_GRID)
+  ord=rep(NA, X_GRID)
+  lowx=xmax
+  lowy=ymax
+  i=1
+  while(index<nrows){
+    lowx=lowx-xres;
+    lowy=lowy-yres;
+    before=index;
+    while(logexppval[index]>=lowx & logobspval[index]>=lowy){
+      index=index+1
+      if (index>nrows){break;}
     }
+    lowx=logexppval[index]
+    lowy=logobspval[index]
     
-    # Now process the positional information
-    pos=unlist( strsplit(reg[2],"-") )
-    
-    # Check that the positional information is correct if not die
-    if (length(pos) != 2 || regexpr("^[1-9][0-9]*",pos[1]) == -1 ||
-          regexpr("^[1-9][0-9]*",pos[2]) == -1 || as.numeric(pos[1]) > as.numeric(pos[2]) ) {
-      stop(paste("[FATAL] The position string does not make sense:",reg[2]))
-    }
-    
-    # If we get to here then we will add the custom region to the regions
-    # data.table
-    regions=rbindlist(list(regions,
-                           data.table(i,
-                                      as.numeric(reg[1]),
-                                      as.numeric(pos[1]),
-                                      as.numeric(pos[2])
-                                      ) 
-                            ) 
-                      )
+    if(before==index){next;}
+    newx[i]=logexppval[before]-0.5*xres
+    newy[i]=logobspval[before]-0.5*yres
+    ord[i]=before
+    i=i+1;
   }
-  
-  setnames(regions,c("region","chr","start","end"))
-  setkey(regions,"chr","start","end")
+  newx=na.trim(newx)
+  newy=na.trim(newy)
+  ord=na.trim(ord)
+return(data.frame(x=newx, y=newy, order=ord))  
 }
 
-# If the user wants to plot some manual labels then open the file and read them
-# in
-man.labels=NULL
-if (is.null(args$manual_labels)==FALSE) {
-  # Read in the manual labels
-  man.labels=suppressWarnings(smartFread(args$manual_labels,
-                              colnames=c("chr","pos","label_col","poi","peak_col","label_name"),
-                              key=c("chr","pos"),
-                              ignore.case=TRUE))
-}
 
-# If biotypes is defined then separate the string and add back to the args
-if (is.null(args$biotypes)==FALSE) {
-  args$biotypes=splitDelimiter(args$biotypes)
-}
+## do the job
+library(data.table)
 
-# Now we open the input file, there is a possibility that the input file is 
-# gzipped, I will just use the file extension to detect this (rather than)
-# looking at the first few bytes (which would be the correct way of doing
-# it)
-pd=suppressWarnings(smartFread(args$INFILE,
-              colnames=c(args$chr_col,args$pos_col,args$pval_col),
-              map=c("chr","ps","p_lrt"),
-              key=c("chr","ps"),
-              ignore.case=TRUE)
-)
+readcmd=paste("zcat ", args[1], sep=" ")
 
-# If we have regions that we want to exclude
-if (nrow(regions) > 0) {
-  # Loop through all the regions and remove them from the data
-  for (i in 1:nrow(regions)) {
-    reg_chr=regions[i,chr]
-    reg_start=regions[i,start]
-    reg_end=regions[i,end]
+outqq=paste(args[1], ".qq.pdf", sep="")
+outman=paste(args[1], ".man.pdf", sep="")
 
-    pd=pd[!(chr==reg_chr & ps >= reg_start & ps <= reg_end),]
-  }
-}
+d=fread(readcmd, select=c(1,3,5,6,14))
 
-if (args$sig_thresh_line==-1) {
-  args$sig_thresh_line=args$sig_thresh
-}
-#print(args)
-# If we want to produce a single plot all together
-# Then we need to do some adjustments to the image sizes
-if (args$plot_combined==TRUE) {
-  # This scales the layout to be 99% of the image file otherwise
-  # R throws a plot region too large error
-  scale_down_by=0.99
-  
-  # This is the total width of the plotting region
-  # The manhattan width + the qq plot width
-  joint_width=args$manh_width+args$qq_width
-  
-  # Ths combined height is the max height of the 
-  # the manhattan and qq height
-  joint_height=max(c(args$manh_height,args$qq_height) )
-  
-  if (args$png==FALSE) {
-    pdf(paste(args$OUTFILE,"_man_qq.pdf",sep=""),
-        width=(joint_width/2.4),
-        height=(joint_height/2.4))
-  } else {
-    # Pointsize is important here, 7 is optimal for the 
-    # default widths and heights but may not be for others
-    png(paste(args$OUTFILE,"_man_qq.png",sep=""),
-        width=joint_width,
-        height=joint_height,
-        pointsize=7,
-        res=300,
-        units="cm")
-  }
-  
-  # Create a grid layout of 1 row and 2 columns the MH plot will be in the 
-  # first column and the qq plot will be in the second column
-  top.vp <- viewport(
-  layout=grid.layout(1, 2,
-                       widths=unit(c(args$manh_width,args$qq_width), "cm"),
-                       heights=unit(max(c(args$manh_height,args$qq_height)),"cm")))
+## QQ PLOT
+library(zoo)
+ret=qqplot(d$p_score)
 
-  # Add the viewport the the viewport tree
-  pushViewport(top.vp)
-  
-  # Now I want to gplot the qq plot first as ggplot2 doesn't seem to like it
-  # when other viewports are already added to the layout
-  qqvp=viewport(layout.pos.col=2, layout.pos.row=1, name="qqplot")
+nn=nrow(d)
+upper=rep(NA, nrow(ret))
+k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
+lower=rep(NA, nrow(ret))
+k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
-  # Do the qqplot, this now uses ggplot2 and supply the viewport to plot to
-  qqplot(pd$p_lrt, lambda=lambdaCalc(pd$p_lrt,round=4),vp=qqvp )
+pdf(outqq)
+plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+xx =  -log10((ret$order)/(nn+1))
+polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
+lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
+lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
+lambdavalue=lambdaCalc(d$p_score)
+text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
+abline(a=0, b=1, col="firebrick", lwd=2)
+points(ret$x, ret$y, pch=20, col="dodgerblue4")
+dev.off()
 
-  # Now add the manhatten plot viewport to the first column in the layout
-  # and make sure it is selected (not structly necessary)
-  pushViewport(viewport(layout.pos.col=1, layout.pos.row=1, name="mhplot") )
-  seekViewport("mhplot")
 
-  # Plot the manhattan plot
-  mhp.annotate.peak(pd,
-                    manual.labels=man.labels,
-                    auto.labels=args$auto_label,
-                    mp=mhppar(sig.thresh.line.plot=TRUE,
-                    sig.thresh=args$sig_thresh,
-                    sig.thresh.line=args$sig_thresh_line),
-                    auto.labels.sigcut=5E-40,
-                    gene.search.biotype=args$biotypes,
-                    build=build)
+pdf(outman, width=12, height=11)
+retm=mhp(d$chr, d$ps, d$p_score)
+peaks=get_peaks_to_annotate(retm)
+print(peaks)
+context=as.data.frame(t(apply(peaks, 1, function(x){
+  u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
+  if(length(u)<3){u[3]="unknown"};
+  return(u);
+  })))
+print(context)
+colnames(context)=c("gene", "distance", "consequence")
+context$distance=as.numeric(as.character(context$distance))
+peaks=cbind(peaks, context)
+peaks$truelabels=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+peaks$pch=15
+peaks$col="forestgreen"
+lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
+high=c("stop_lost", "start_lost", "transcript_amplification")
+exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
+low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
+intronic=c("intron_variant")
+intergenic=c("intergenic_variant")
+peaks$pch[peaks$consequence %in% lof]=4
+peaks$col[peaks$consequence %in% lof]="firebrick"
+peaks$pch[peaks$consequence %in% high]=17
+peaks$col[peaks$consequence %in% high]="orange"
+peaks$pch[peaks$consequence %in% exonic]=25
+peaks$col[peaks$consequence %in% exonic]="goldenrod"
+peaks$pch[peaks$consequence %in% low]=25
+peaks$col[peaks$consequence %in% low]="brown"
+peaks$pch[peaks$consequence %in% intronic]=18
+peaks$col[peaks$consequence %in% intronic]="brown"
+peaks$pch[peaks$consequence %in% intergenic]=19
+peaks$col[peaks$consequence %in% intergenic]="darkgray"
 
-#  addLabels(args,regions)
-  dev.off()
-} else {
-  # if we do want to plot a qq plot
-  if (args$no_qq==FALSE) {
-    if (args$png==FALSE) {
-      pdf(paste(args$OUTFILE,"_qq.pdf",sep=""),
-          width=(args$qq_width/2.4),
-          height=(args$qq_height/2.4))
-    } else {
-      print("HELLO")
-      png(paste(args$OUTFILE,"_qq.png",sep=""),
-          width=args$qq_width,
-          height=args$qq_height,
-          pointsize=7,
-          res=300,
-          units="cm")
-    }
-    qqplot(pd$p_lrt, lambda=lambdaCalc(pd$p_lrt,round=4))
-#  addLabels(args,regions)
-    dev.off()
-  }
+plot_manhattan(retm, peaks)
+dev.off()
 
-  # If we don't want a qq plot then do not plot it
-  if (args$no_mh==FALSE) {
-    if (args$png==FALSE) {
-      pdf(paste(args$OUTFILE,"_manh.pdf",sep=""),
-          width=(args$manh_width/2.4),
-          height=(args$manh_height/2.4))
-    } else {
-      png(paste(args$OUTFILE,"_manh.png",sep=""),
-          width=args$manh_width,
-          height=args$manh_height,
-          pointsize=7,
-          res=300,
-          units="cm")
-    }
 
-    mhp.annotate.peak(pd,
-                 manual.labels=man.labels,
-                 auto.labels=args$auto_label,
-                 mp=mhppar(sig.thresh.line.plot=TRUE,sig.thresh=args$sig_thresh,sig.thresh.line=args$sig_thresh_line),
-                 auto.labels.sigcut=5E-40,
-                 gene.search.biotype=args$biotypes)
-#  mhp(pd,sig.thresh=args$sig_thresh)
-#  addLabels(args,regions)
-    dev.off()
-#    print(warnings())
-#    warnings()
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
