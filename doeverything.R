@@ -1,93 +1,6 @@
-#!/software/bin/Rscript --vanilla
 
-#args = commandArgs(trailingOnly=TRUE)
-
-library(argparse)
-
-
-# create parser object
-parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
-
-# parser$add_argument("-x", 
-#                     "--exclude-regions", 
-#                     type="character",
-#                     help="A comma separated list of regions to exclude from the data before plotting, should be CHR:STPOS-ENDPOS format",
-#                     metavar="[character]")
-
-parser$add_argument("--chr-col", 
-                    type="character",
-                    default="chr",
-                    help="The column NAME for the chromosome column, default chr",
-                    metavar="[character]")
-
-parser$add_argument("--pval-col", 
-                    type="character",
-                    default="pval",
-                    help="The column NAME for the chromosome column, default pval",
-                    metavar="[character]")
-
-parser$add_argument("--pos-col", 
-                    type="character",
-                    default="pos",
-                    help="The column NAME for the chromosome column, default pos",
-                    metavar="[character]")
-
-# parser$add_argument("--sig-thresh", 
-#                     type="double",
-#                     default=5E-08,
-#                     help="The significance threshold above which points will appear green",
-#                     metavar="[DOUBLE]")
-
-parser$add_argument("--sig-thresh-line", 
-                    type="double",
-                    default=-1.0,
-                    help="The significance threshold for the line",
-                    metavar="[DOUBLE]")
-
-parser$add_argument("--title", 
-                    type="character",
-                    default="",
-                    help="An optional text title to add to each plot",
-                    metavar="[character]")
-
-
-# parser$add_argument("-b",
-#                     "--biotypes",
-#                     type="character",
-#                     help="A comma separated list of biotypes to restrict the gene searches")
-
-# parser$add_argument("--pdf", action="store_false", default=TRUE,
-#                     dest="png",help="Should the output be a pdf file")
-
-parser$add_argument("--png", action="store_true",
-                    help="Should the output be a png file (the default)")
-
-# parser$add_argument("--no-mh", action="store_true", default=FALSE,
-#                     help="Should I only plot a qq plot")
-# 
-# parser$add_argument("--no-qq", action="store_true",default=FALSE,
-#                     help="Should I only plot a mh plot")
-
-# parser$add_argument("--qq-width", type="integer",default=15,
-#                     help="The width of the QQ plot in cm",
-#                     metavar="[integer]")
-# 
-# parser$add_argument("--qq-height", type="integer",default=15,
-#                     help="The height of the QQ plot in cm",
-#                     metavar="[integer]")
-# 
-# parser$add_argument("--manh-width", type="integer",default=20,
-#                     help="The width of the manhattan plot in cm",
-#                     metavar="[integer]")
-# 
-# parser$add_argument("--manh-height", type="integer",default=15,
-#                     help="The height of the manhattan plot in cm",
-#                     metavar="[integer]")
-
-parser$add_argument("--build", type="integer",default=38,
-                    help="The genome build the positions refer to",
-                    metavar="[integer]")
-
+library(httr)
+library(jsonlite)
 
 
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
@@ -286,11 +199,7 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 
 }
 
-
-library(httr)
-library(jsonlite)
-
-
+    null2na <- function(x){ ifelse(is.null(x),NA,x)}
 
 get_variant_context=function(chr,pos,a1, a2,build=38) {
     alleles=c(a1, a2)
@@ -304,14 +213,15 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
     ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
     r=GET(paste(server, ext, sep = ""), content_type("application/json"))
     stop_for_status(r)
-    restr=fromJSON(toJSON(content(r)))
-    
+    restr=fromJSON(toJSON(content(r),null="null"))
+#    print(content(r))
+    #return(restr)
     # if it's intergenic find closest gene
     if(length(restr)==0) {
       ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
       r=GET(paste(server, ext, sep = ""), content_type("application/json"))
       stop_for_status(r)
-      restr=fromJSON(toJSON(content(r)))
+      restr=fromJSON(toJSON(content(r),null="null"))
       restr=restr[restr$biotype=="protein_coding",]
       restr$dist1=abs(pos-unlist(restr$start))
       restr$dist2=abs(pos-unlist(restr$end))
@@ -472,71 +382,6 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
 return(data.frame(x=newx, y=newy, order=ord))  
 }
 
-
-## do the job
-library(data.table)
-
-readcmd=paste("zcat ", args[1], sep=" ")
-
-outqq=paste(args[1], ".qq.pdf", sep="")
-outman=paste(args[1], ".man.pdf", sep="")
-
-d=fread(readcmd, select=c(1,3,5,6,14))
-
-## QQ PLOT
-library(zoo)
-ret=qqplot(d$p_score)
-
-nn=nrow(d)
-upper=rep(NA, nrow(ret))
-k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
-lower=rep(NA, nrow(ret))
-k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
-
-pdf(outqq)
-plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
-xx =  -log10((ret$order)/(nn+1))
-polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
-lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
-lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
-lambdavalue=lambdaCalc(d$p_score)
-text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
-abline(a=0, b=1, col="firebrick", lwd=2)
-points(ret$x, ret$y, pch=20, col="dodgerblue4")
-dev.off()
-
-
-pdf(outman, width=10, height=6)
-retm=mhp(d$chr, d$ps, d$p_score)
-peaks=get_peaks_to_annotate(retm)
-context=as.data.frame(t(apply(peaks, 1, function(x){u=get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]);if(length(u)<3){u[3]="unknown"}return(u)})))
-colnames(context)=c("gene", "distance", "consequence")
-context$distance=as.numeric(as.character(context$distance))
-peaks=cbind(peaks, context)
-peaks$truelabels=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
-peaks$pch=15
-peaks$col="forestgreen"
-lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
-high=c("stop_lost", "start_lost", "transcript_amplification")
-exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
-low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
-intronic=c("intron_variant")
-intergenic=c("intergenic_variant")
-peaks$pch[peaks$consequence %in% lof]=4
-peaks$col[peaks$consequence %in% lof]="firebrick"
-peaks$pch[peaks$consequence %in% high]=17
-peaks$col[peaks$consequence %in% high]="orange"
-peaks$pch[peaks$consequence %in% exonic]=25
-peaks$col[peaks$consequence %in% exonic]="goldenrod"
-peaks$pch[peaks$consequence %in% low]=25
-peaks$col[peaks$consequence %in% low]="brown"
-peaks$pch[peaks$consequence %in% intronic]=18
-peaks$col[peaks$consequence %in% intronic]="brown"
-peaks$pch[peaks$consequence %in% intergenic]=19
-peaks$col[peaks$consequence %in% intergenic]="darkgray"
-
-plot_manhattan(retm, peaks)
-dev.off()
 
 
 
