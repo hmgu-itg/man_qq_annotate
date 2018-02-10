@@ -1,7 +1,7 @@
 library(argparse)
 library(zoo)
 
-source("~sh29/repos/man_qq/doeverything.R")
+source("~sh29/repos/man_qq/manqq_functions.R")
 
 # create parser object
 parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
@@ -104,17 +104,20 @@ pdf(outman, width=10, height=6)
 retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
 print("HELLO")
 peaks=get_peaks_to_annotate(retm)
-context=as.data.frame(t(apply(peaks, 1, function(x){
+
+context=apply(peaks, 1, function(x){
   u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
   if(length(u)<3){u[3]="unknown"};
   return(u);
-  })))
-print(context)
+  })
+
+context=as.data.frame(t(context))
+
 colnames(context)=c("gene", "distance", "consequence")
 context$distance=as.numeric(as.character(context$distance))
 peaks=cbind(peaks, context)
-peaks$truelabels=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
-peaks$pch=15
+peaks$truelabels=peaks$gene
+peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))peaks$pch=15
 peaks$col="forestgreen"
 lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
 high=c("stop_lost", "start_lost", "transcript_amplification")
@@ -137,3 +140,5 @@ peaks$col[peaks$consequence %in% intergenic]="darkgray"
 
 plot_manhattan(retm, peaks)
 dev.off()
+
+
