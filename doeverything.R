@@ -3,6 +3,9 @@ library(httr)
 library(jsonlite)
 
 
+args = commandArgs(trailingOnly=TRUE)
+library(data.table)
+
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
@@ -150,6 +153,9 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
   ret$build=build
   return(ret)
+  }else{
+    return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
+  }
 }
 
 
@@ -199,7 +205,6 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 
 }
 
-    null2na <- function(x){ ifelse(is.null(x),NA,x)}
 
 get_variant_context=function(chr,pos,a1, a2,build=38) {
     alleles=c(a1, a2)
@@ -319,6 +324,61 @@ if(!("error" %in% names(vep_data))) {
 
 }
 
+get_variant_context=function(chr,pos,a1, a2,build=38) {
+    alleles=c(a1, a2)
+    if(build==38) {
+      server="http://rest.ensembl.org"
+      } else if(build==37) {
+        server="http://grch37.rest.ensembl.org"
+      } else {
+        print("Some warning here")
+      }
+    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
+    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+    stop_for_status(r)
+    #return(content(r))
+    restr=fromJSON(toJSON(content(r), null="null"))
+    
+    # if it's intergenic find closest gene
+    if(length(restr)==0) {
+      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
+      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      stop_for_status(r)
+      restr=fromJSON(toJSON(content(r)))
+      restr=restr[restr$biotype=="protein_coding",]
+      restr$dist1=abs(pos-unlist(restr$start))
+      restr$dist2=abs(pos-unlist(restr$end))
+      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      dist=min(restr$dist)
+
+      # get consequence
+      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
+      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # stop_for_status(r)
+      # restsnp=fromJSON(toJSON(content(r)))
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+      }
+      return(c(gene,dist,cons$most_severe_consequence[[1]]))
+
+    # if it's inside a gene, do stuff
+    } else {
+      restr$dist=0
+      gene=paste(unlist(restr$external_name), collapse=",")
+      cons=data.table()
+      for(i in alleles) {
+        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+      }
+      return(c(gene,0,cons$most_severe_consequence))
+
+    }
+    
+}
+
 lambdaCalc = function(pval,round=NULL) {
   lambda = qchisq(median(pval, na.rm=TRUE),1, lower.tail=FALSE)/0.456
 
@@ -383,6 +443,83 @@ return(data.frame(x=newx, y=newy, order=ord))
 }
 
 
+####### moved this to the exectuable script
+# ## do the job
+# library(data.table)
+# 
+# readcmd=paste("zcat ", args[1], sep=" ")
+# 
+# outqq=paste(args[2], ".qq.pdf", sep="")
+# outman=paste(args[2], ".man.pdf", sep="")
+# 
+# d=fread(readcmd, select=c(1,3,5,6,14))
+# 
+# ## QQ PLOT
+# library(zoo)
+# ret=qqplot(d$p_score)
+# 
+# nn=nrow(d)
+# upper=rep(NA, nrow(ret))
+# k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
+# lower=rep(NA, nrow(ret))
+# k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
+# 
+# pdf(outqq)
+# plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+# xx =  -log10((ret$order)/(nn+1))
+# polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
+# lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
+# lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
+# lambdavalue=lambdaCalc(d$p_score)
+# text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
+# abline(a=0, b=1, col="firebrick", lwd=2)
+# points(ret$x, ret$y, pch=20, col="dodgerblue4")
+# dev.off()
+# 
+# 
+# pdf(outman, width=12, height=11)
+# retm=mhp(d$chr, d$ps, d$p_score)
+# peaks=get_peaks_to_annotate(retm)
+# if(nrow(peaks)==0){peaks=NULL}else{
+# 
+# context=apply(peaks, 1, function(x){
+#   u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
+#   if(length(u)<3){u[3]="unknown"};
+#   return(u);
+#   })
+# 
+# context=as.data.frame(t(context))
+# 
+# colnames(context)=c("gene", "distance", "consequence")
+# context$distance=as.numeric(as.character(context$distance))
+# peaks=cbind(peaks, context)
+# peaks$truelabels=peaks$gene
+# peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+# peaks$pch=15
+# peaks$col="forestgreen"
+# lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
+# high=c("stop_lost", "start_lost", "transcript_amplification")
+# exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
+# low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
+# intronic=c("intron_variant")
+# intergenic=c("intergenic_variant")
+# peaks$pch[peaks$consequence %in% lof]=4
+# peaks$col[peaks$consequence %in% lof]="firebrick"
+# peaks$pch[peaks$consequence %in% high]=17
+# peaks$col[peaks$consequence %in% high]="orange"
+# peaks$pch[peaks$consequence %in% exonic]=25
+# peaks$col[peaks$consequence %in% exonic]="goldenrod"
+# peaks$pch[peaks$consequence %in% low]=25
+# peaks$col[peaks$consequence %in% low]="brown"
+# peaks$pch[peaks$consequence %in% intronic]=18
+# peaks$col[peaks$consequence %in% intronic]="brown"
+# peaks$pch[peaks$consequence %in% intergenic]=19
+# peaks$col[peaks$consequence %in% intergenic]="darkgray"
+# }
+# plot_manhattan(retm, peaks)
+# dev.off()
+# 
+# >>>>>>> ae520c885f6e195555054739fd5b58f795b08d03:man_qq_annotate.R
 
 
 
