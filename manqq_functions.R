@@ -208,67 +208,6 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 }
 
 
-get_variant_context=function(chr,pos,a1, a2,build=38) {
-    alleles=c(a1, a2)
-    if(build==38) {
-      server="http://rest.ensembl.org"
-      } else if(build==37) {
-        server="http://grch37.rest.ensembl.org"
-      } else {
-        print("Some warning here")
-      }
-    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
-    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-    stop_for_status(r)
-    restr=fromJSON(toJSON(content(r),null="null"))
-#    print(content(r))
-    #return(restr)
-    # if it's intergenic find closest gene
-    if(length(restr)==0) {
-      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
-      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      stop_for_status(r)
-      restr=fromJSON(toJSON(content(r),null="null"))
-      restr=restr[restr$biotype=="protein_coding",]
-      restr$dist1=abs(pos-unlist(restr$start))
-      restr$dist2=abs(pos-unlist(restr$end))
-      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-      dist=min(restr$dist)
-
-      # get consequence
-      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      # stop_for_status(r)
-      # restsnp=fromJSON(toJSON(content(r)))
-      cons=data.table()
-      for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
-      }
-      return(c(gene,dist,cons$most_severe_consequence[[1]]))
-
-    # if it's inside a gene, do stuff
-    } else {
-      restr=restr[restr$biotype=="protein_coding",]
-      restr$dist1=abs(pos-unlist(restr$start))
-      restr$dist2=abs(pos-unlist(restr$end))
-      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-      dist=min(restr$dist)
-      cons=data.table()
-      for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
-      }
-      return(c(gene,dist,cons$most_severe_consequence))
-
-    }
-    
-}
-
 
 ###############################################################################
 # A generalised function for running a query against the ensembl rest API,this#

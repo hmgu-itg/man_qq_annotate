@@ -76,9 +76,6 @@ args=parser$parse_args()
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
-outqq=paste(args$outfile, ".qq.pdf", sep="")
-outman=paste(args$outfile, ".man.pdf", sep="")
-
 d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval))
 #d=fread(readcmd, select=c(1,3,5,6,14))
 
@@ -92,9 +89,9 @@ lower=rep(NA, nrow(ret))
 k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
 if(args$type=="pdf") {
-    pdf(outqq)    
+    pdf(paste(args$outfile, ".qq.pdf", sep=""))    
 } else if(args$type=="png") {
-    png(outqq)
+    png(paste(args$outfile, ".qq.png", sep=""))
 }
 plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
 xx =  -log10((ret$order)/(nn+1))
@@ -110,9 +107,9 @@ dev.off()
 
 ## MANHATTAN PLOT
 if(args$type=="pdf") {
-    pdf(outman, width=10, height=6)    
+    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=6)    
 } else if(args$type=="png") {
-    png(outman, width=10, height=6)
+    png(paste(args$outfile, ".man.png", sep=""), width=10, height=6)
 }
 retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
 print("HELLO")
