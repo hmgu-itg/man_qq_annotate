@@ -134,6 +134,7 @@ return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labp
 get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   # expects an object from the mhp function
   ret=NULL
+  retm=manhattan_object
   sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
   if(length(sig>1)){
   for(xpos in sig){
@@ -141,7 +142,7 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
     mmin=dict_entry$min;
     mmax=dict_entry$max;
     chr=dict_entry$chr;
-    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax & d$p_score<signif,];
+    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax,];
     peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
     peakdata=peakdata[1,];
     peakdata$plotpos=xpos
@@ -290,6 +291,12 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
       restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
       restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
       restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      print("overlap no")
+      print(restr)
+      print(class(restr))
+      print(class(restr$gene_id))
+      print(length(restr))
+      if(nrow(restr)>0){
       gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
       dist=min(restr$dist)
 
@@ -303,9 +310,13 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
         cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
       }
       return(c(gene,dist,cons$most_severe_consequence[[1]]))
-
+	}else{
+	return(c("none", "0", "intergenic_variant"))
+	}
     # if it's inside a gene, do stuff
     } else {
+		print("overlap yes")
+		print(restr)
       restr$dist=0
       gene=paste(unlist(restr$external_name), collapse=",")
       cons=data.table()
@@ -431,8 +442,8 @@ context=as.data.frame(t(context))
 colnames(context)=c("gene", "distance", "consequence")
 context$distance=as.numeric(as.character(context$distance))
 peaks=cbind(peaks, context)
-peaks$truelabels=peaks$gene
-peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+peaks$truelabels=as.character(peaks$gene)
+peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
 peaks$pch=15
 peaks$col="forestgreen"
 lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
