@@ -138,21 +138,23 @@ return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labp
 get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   # expects an object from the mhp function
   ret=NULL
-  for(xpos in unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])){
-    dict_entry=retm$posdict[retm$posdict$coord==xpos,];
-    mmin=dict_entry$min;
-    mmax=dict_entry$max;
-    chr=dict_entry$chr;
-    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax & d$p_score<signif,];
-    peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
-    peakdata=peakdata[1,];
-    peakdata$plotpos=xpos
-    peakdata$ploty=-log10(peakdata$p_score)
-    ret=rbind(ret,peakdata)
-  }
-  ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
-  ret$build=build
-  return(ret)
+  sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
+  if(length(sig>1)){
+    for(xpos in unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])){
+      dict_entry=retm$posdict[retm$posdict$coord==xpos,];
+      mmin=dict_entry$min;
+      mmax=dict_entry$max;
+      chr=dict_entry$chr;
+      peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax & d$p_score<signif,];
+      peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
+      peakdata=peakdata[1,];
+      peakdata$plotpos=xpos
+      peakdata$ploty=-log10(peakdata$p_score)
+      ret=rbind(ret,peakdata)
+    }
+    ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
+    ret$build=build
+    return(ret)
   }else{
     return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
@@ -519,44 +521,4 @@ return(data.frame(x=newx, y=newy, order=ord))
 # plot_manhattan(retm, peaks)
 # dev.off()
 # 
-# >>>>>>> ae520c885f6e195555054739fd5b58f795b08d03:man_qq_annotate.R
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1,5 +1,6 @@
 library(argparse)
 library(zoo)
+library(data.table)
 
 source("~sh29/repos/man_qq/manqq_functions.R")
 
@@ -37,6 +38,14 @@ parser$add_argument("--a2",
                     help="The column NAME for the non-effect column, default a2",
                     metavar="[character]")
 
+parser$add_argument("--build", type="integer",default=38,
+                    help="The genome build the positions refer to",
+                    metavar="[integer]")
+
+parser$add_argument("--type", type="character",default="pdf",
+                    help="The filetype to save plots to",
+                    metavar="[character]")
+
 #parser$add_argument("--sig-thresh-line", 
 #                    type="double",
 #                    default=-1.0,
@@ -49,9 +58,7 @@ parser$add_argument("--a2",
 #                    help="An optional text title to add to each plot",
 #                    metavar="[character]")
 
-parser$add_argument("--build", type="integer",default=38,
-                    help="The genome build the positions refer to",
-                    metavar="[integer]")
+
 
 # The input file used to create the plots
 parser$add_argument("infile", nargs=1, help="Input file name, must be gzip file")
@@ -59,16 +66,13 @@ parser$add_argument("infile", nargs=1, help="Input file name, must be gzip file"
 # The input file used to create the plots
 parser$add_argument("outfile", nargs=1, help="Output file name (with no file extension)")
 
-args <- parser$parse_args()
+args=parser$parse_args()
 #args=list()
 #args$a1="allele1"
 #args$a2="allele0"
 #args$chr="chr"
 #args$pos="ps"
 #args$pval="p_score"
-
-## do the job
-library(data.table)
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
@@ -87,20 +91,29 @@ k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
 lower=rep(NA, nrow(ret))
 k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
-#pdf(outqq)
-#plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
-#xx =  -log10((ret$order)/(nn+1))
-#polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
-#lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
-#lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
-#lambdavalue=lambdaCalc(d[,args$pval,with=FALSE][[1]])
-#text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
-#abline(a=0, b=1, col="firebrick", lwd=2)
-#points(ret$x, ret$y, pch=20, col="dodgerblue4")
-#dev.off()
+if(args$type=="pdf") {
+    pdf(outqq)    
+} else if(args$type=="png") {
+    png(outqq)
+}
+plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+xx =  -log10((ret$order)/(nn+1))
+polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
+lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
+lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
+lambdavalue=lambdaCalc(d[,args$pval,with=FALSE][[1]])
+text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
+abline(a=0, b=1, col="firebrick", lwd=2)
+points(ret$x, ret$y, pch=20, col="dodgerblue4")
+dev.off()
 
 
-pdf(outman, width=10, height=6)
+## MANHATTAN PLOT
+if(args$type=="pdf") {
+    pdf(outman, width=10, height=6)    
+} else if(args$type=="png") {
+    png(outman, width=10, height=6)
+}
 retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
 print("HELLO")
 peaks=get_peaks_to_annotate(retm)
@@ -117,7 +130,8 @@ colnames(context)=c("gene", "distance", "consequence")
 context$distance=as.numeric(as.character(context$distance))
 peaks=cbind(peaks, context)
 peaks$truelabels=peaks$gene
-peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))peaks$pch=15
+peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+peaks$pch=15
 peaks$col="forestgreen"
 lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
 high=c("stop_lost", "start_lost", "transcript_amplification")
