@@ -52,47 +52,47 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   
   
   for ( i in 1:22 ){
-    curchr= which(chr == i)
+    curchr=which(chr==i)
     curcol=ifelse (i%%2==0, col1, col2)
     
-    t[[i]]= pos[curchr]
+    t[[i]]=pos[curchr]
     
     # min and max pos and size of cur chr
-    mi[i]= min(t[[i]])
-    ma[i]= max(t[[i]])
-    size[i+1]= ma[i]-mi[i]
-    numpoints[i+1]= length(t[[i]])
+    mi[i]=min(t[[i]])
+    ma[i]=max(t[[i]])
+    size[i+1]=ma[i]-mi[i]
+    numpoints[i+1]=length(t[[i]])
+    
     ## Correcting positions: subtracting the start offset and adding length of previous chromosomes.
     ## Elements of T should now be continuous (notice that i is a sum.)
-    offset= sum(size[1:i])
+    offset=sum(size[1:i])
 
     ## the reassignment permanently destroys all positions so we have to save them
     posdict[[i]]=data.frame(pos=t[[i]])
-    t[[i]]= (t[[i]]-mi[i])+offset+i
+    t[[i]]=(t[[i]]-mi[i])+offset+i
     posdict[[i]]$newpos=t[[i]]
-    ## Label positions (for later)
-    labpos[i]= offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
     
+    ## Label positions (for later)
+    labpos[i]=offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
     
     ## Create x grid for current chromosome
-    topvalue= (offset+size[i+1]+i)
-    breaks= seq((offset+i), topvalue, by=xres)
-    
+    topvalue=(offset+size[i+1]+i)
+    breaks=seq((offset+i), topvalue, by=xres)
     
     ## seq does not go till the end if by is specified
     if(breaks[length(breaks)] != topvalue){breaks=c(breaks, topvalue)}
     
     ## compute histogram of SNPs according to grid
-    h= hist(t[[i]], breaks=breaks, plot=FALSE)
+    h=hist(t[[i]], breaks=breaks, plot=FALSE)
     
-    # add in the hist coordinates for reference (multiplies exec time by 2 :/)
+    ## add in the hist coordinates for reference (multiplies exec time by 2 :/ - sadness!)
     posdict[[i]]$poscat=cut(posdict[[i]]$newpos, breaks=breaks, labels=h$mids)
     posdict[[i]]$poscat=as.numeric(as.character(posdict[[i]]$poscat))+((i-1)*12000000)
     posdict[[i]]$chr=i
-    ## For each interval in this chromosome
-    ##  -get all corresponding y values
-    ##	-compute histogram along y grid
-    ##	-fill non-zero intervals with single middle value
+    ## For each interval in this chromosome:
+    ## -get all corresponding y values
+    ## -compute histogram along y grid
+    ## -fill non-zero intervals with single middle value
     
     baseoffset= sum(numpoints[1:i])
     
@@ -138,23 +138,24 @@ return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labp
 get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
   # expects an object from the mhp function
   ret=NULL
+  retm=manhattan_object
   sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
   if(length(sig>1)){
-    for(xpos in unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])){
-      dict_entry=retm$posdict[retm$posdict$coord==xpos,];
-      mmin=dict_entry$min;
-      mmax=dict_entry$max;
-      chr=dict_entry$chr;
-      peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax & d$p_score<signif,];
-      peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
-      peakdata=peakdata[1,];
-      peakdata$plotpos=xpos
-      peakdata$ploty=-log10(peakdata$p_score)
-      ret=rbind(ret,peakdata)
-    }
-    ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
-    ret$build=build
-    return(ret)
+  for(xpos in sig){
+    dict_entry=retm$posdict[retm$posdict$coord==xpos,];
+    mmin=dict_entry$min;
+    mmax=dict_entry$max;
+    chr=dict_entry$chr;
+    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax,];
+    peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
+    peakdata=peakdata[1,];
+    peakdata$plotpos=xpos
+    peakdata$ploty=-log10(peakdata$p_score)
+    ret=rbind(ret,peakdata)
+  }
+  ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
+  ret$build=build
+  return(ret)
   }else{
     return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
@@ -162,29 +163,34 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
 
 
 plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8, MAX_NUM_PEAKS=30){
+  
   yl=ifelse(!is.null(annotation_object), 1.5*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
 
   print(max(manhattan_object$newcoords$y))
+
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
     pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
     axes=F,bty="n", ylim=c(0, yl))
+
   if(!is.null(annotation_object)){
     segments(x0=annotation_object$plotpos, 
-      y0=annotation_object$ploty, 
-      y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
-      espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
-      labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),
-        by=espacement/MAX_NUM_PEAKS)
+    y0=annotation_object$ploty, 
+    y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
+    espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
+    labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),by=espacement/MAX_NUM_PEAKS)
       
-      labelpos=apply(annotation_object, 1, function(x){
-        if(length(labelslots)==0){print("Error: too many peaks.");return(x["plotpos"])}
+      labelpos=apply(annotation_object, 1, function(x) {
+        if(length(labelslots)==0) {
+          print("Error: too many peaks.")
+          return(x["plotpos"])
+        }
         slotdist=abs(labelslots-as.numeric(x["plotpos"]))
         idx=(1:length(slotdist))[slotdist==min(slotdist)]
         print(idx)
         ret=labelslots[idx]
         print(ret)
         print(labelslots)
-        labelslots<<-labelslots[-idx]
+        labelslots=labelslots[-idx]
         print(labelslots)
         return(ret)
         })
@@ -200,7 +206,7 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
     axis(2,las=1,cex=1.5)
   for (i in 1:22){
-    pp= ifelse(i %% 2 == 0, 0, 1)
+    pp=ifelse(i %% 2 == 0, 0, 1)
     mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=1.5)
   }
   mtext("Chromosome",1,at=1,cex=1.5,line=0)
@@ -292,6 +298,12 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
       restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
       restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
       restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      print("overlap no")
+      print(restr)
+      print(class(restr))
+      print(class(restr$gene_id))
+      print(length(restr))
+      if(nrow(restr)>0){
       gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
       dist=min(restr$dist)
 
@@ -305,9 +317,13 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
         cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
       }
       return(c(gene,dist,cons$most_severe_consequence[[1]]))
-
+	}else{
+	return(c("none", "0", "intergenic_variant"))
+	}
     # if it's inside a gene, do stuff
     } else {
+		print("overlap yes")
+		print(restr)
       restr$dist=0
       gene=paste(unlist(restr$external_name), collapse=",")
       cons=data.table()
@@ -384,7 +400,9 @@ return(data.frame(x=newx, y=newy, order=ord))
 }
 
 
+
 ####### moved this to the exectuable script
+# 
 # ## do the job
 # library(data.table)
 # 
@@ -434,8 +452,8 @@ return(data.frame(x=newx, y=newy, order=ord))
 # colnames(context)=c("gene", "distance", "consequence")
 # context$distance=as.numeric(as.character(context$distance))
 # peaks=cbind(peaks, context)
-# peaks$truelabels=peaks$gene
-# peaks$truelabels[peaks$dist>0]=paste(peaks$gene, paste(" (", ceiling(peaks$distance/1000), "kbp)", sep=""))
+# peaks$truelabels=as.character(peaks$gene)
+# peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
 # peaks$pch=15
 # peaks$col="forestgreen"
 # lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
@@ -460,4 +478,3 @@ return(data.frame(x=newx, y=newy, order=ord))
 # plot_manhattan(retm, peaks)
 # dev.off()
 # 
-
