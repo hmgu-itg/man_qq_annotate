@@ -1,8 +1,12 @@
-library(argparse)
-library(zoo)
-library(data.table)
 
-source("~sh29/repos/man_qq/manqq_functions.R")
+# Source in packages and functions
+suppressPackageStartupMessages(library(argparse))
+suppressPackageStartupMessages(library(zoo))
+suppressPackageStartupMessages(library(data.table))
+
+suppressPackageStartupMessages(source("~sh29/repos/man_qq/manqq_functions.R"))
+
+# run ./run_manqq.R --help or ./run_manqq -h to display help message
 
 # create parser object
 parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
@@ -16,34 +20,38 @@ parser$add_argument("--chr-col",
 
 parser$add_argument("--pval-col", 
                     type="character",
-                    default="pval",
-                    help="The column NAME for the chromosome column, default pval",
+                    default="p_score",
+                    help="The column NAME for the chromosome column, default p_score",
                     metavar="[character]")
 
 parser$add_argument("--pos-col", 
                     type="character",
-                    default="pos",
-                    help="The column NAME for the chromosome column, default pos",
+                    default="ps",
+                    help="The column NAME for the chromosome column, default ps",
                     metavar="[character]")
 
 parser$add_argument("--a1", 
                     type="character",
-                    default="pos",
-                    help="The column NAME for the effect allele column, default a1",
+                    default="allele1",
+                    help="The column NAME for the effect allele column, default allele1",
                     metavar="[character]")
 
 parser$add_argument("--a2", 
                     type="character",
-                    default="pos",
-                    help="The column NAME for the non-effect column, default a2",
+                    default="allele0",
+                    help="The column NAME for the non-effect column, default allele0",
                     metavar="[character]")
 
-parser$add_argument("--build", type="integer",default=38,
+parser$add_argument("--build", 
+                    type="integer",
+                    default=38,
                     help="The genome build the positions refer to",
                     metavar="[integer]")
 
-parser$add_argument("--type", type="character",default="pdf",
-                    help="The filetype to save plots to",
+parser$add_argument("--image", 
+                    type="character",
+                    default="pdf",
+                    help="The filetype to save plots to (png or pdf)",
                     metavar="[character]")
 
 #parser$add_argument("--sig-thresh-line", 
@@ -67,17 +75,12 @@ parser$add_argument("infile", nargs=1, help="Input file name, must be gzip file"
 parser$add_argument("outfile", nargs=1, help="Output file name (with no file extension)")
 
 args=parser$parse_args()
-#args=list()
-#args$a1="allele1"
-#args$a2="allele0"
-#args$chr="chr"
-#args$pos="ps"
-#args$pval="p_score"
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
 d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval))
 #d=fread(readcmd, select=c(1,3,5,6,14))
+
 
 ## QQ PLOT
 ret=qqplot(d[,args$pval,with=FALSE][[1]])
@@ -88,9 +91,9 @@ k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
 lower=rep(NA, nrow(ret))
 k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
-if(args$type=="pdf") {
+if(args$image=="pdf") {
     pdf(paste(args$outfile, ".qq.pdf", sep=""))    
-} else if(args$type=="png") {
+} else if(args$image=="png") {
     png(paste(args$outfile, ".qq.png", sep=""))
 }
 plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
@@ -106,9 +109,9 @@ dev.off()
 
 
 ## MANHATTAN PLOT
-if(args$type=="pdf") {
+if(args$image=="pdf") {
     pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=6)    
-} else if(args$type=="png") {
+} else if(args$image=="png") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
 }
 retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
