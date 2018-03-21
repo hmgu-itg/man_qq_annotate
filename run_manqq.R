@@ -53,13 +53,19 @@ parser$add_argument("--image",
                     default="pdf",
                     help="The filetype to save plots to (png or pdf)",
                     metavar="[character]")
-
+#
 #parser$add_argument("--sig-thresh-line", 
 #                    type="double",
 #                    default=-1.0,
 #                    help="The significance threshold for the line",
-#                    metavar="[DOUBLE]")
+#                    metavar="[double]")
 #
+#parser$add_argument("--ylim", 
+#                    type="integer",
+#                    default=-1.0,
+#                    help="The y-axis limit (-log10(p))",
+#                    metavar="[integer]")
+
 #parser$add_argument("--title", 
 #                    type="character",
 #                    default="",
@@ -120,40 +126,40 @@ peaks=get_peaks_to_annotate(retm)
 
 if(nrow(peaks)==0) {
     peaks=NULL
-    }else{
-context=apply(peaks, 1, function(x){
-  u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
-  if(length(u)<3){u[3]="unknown"};
-  return(u);
-  })
-
-context=as.data.frame(t(context))
-
-colnames(context)=c("gene", "distance", "consequence")
-context$distance=as.numeric(as.character(context$distance))
-peaks=cbind(peaks, context)
-peaks$truelabels=as.character(peaks$gene)
-peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
-peaks$pch=15
-peaks$col="forestgreen"
-lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
-high=c("stop_lost", "start_lost", "transcript_amplification")
-exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
-low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
-intronic=c("intron_variant")
-intergenic=c("intergenic_variant")
-peaks$pch[peaks$consequence %in% lof]=4
-peaks$col[peaks$consequence %in% lof]="firebrick"
-peaks$pch[peaks$consequence %in% high]=17
-peaks$col[peaks$consequence %in% high]="orange"
-peaks$pch[peaks$consequence %in% exonic]=25
-peaks$col[peaks$consequence %in% exonic]="goldenrod"
-peaks$pch[peaks$consequence %in% low]=25
-peaks$col[peaks$consequence %in% low]="brown"
-peaks$pch[peaks$consequence %in% intronic]=18
-peaks$col[peaks$consequence %in% intronic]="brown"
-peaks$pch[peaks$consequence %in% intergenic]=19
-peaks$col[peaks$consequence %in% intergenic]="darkgray"
+}else{
+    context=apply(peaks, 1, function(x){
+      u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
+      if(length(u)<3){u[3]="unknown"};
+      return(u);
+      })
+    
+    context=as.data.frame(t(context))
+    
+    colnames(context)=c("gene", "distance", "consequence")
+    context$distance=as.numeric(as.character(context$distance))
+    peaks=cbind(peaks, context)
+    peaks$truelabels=as.character(peaks$gene)
+    peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
+    peaks$pch=15
+    peaks$col="forestgreen"
+    lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
+    high=c("stop_lost", "start_lost", "transcript_amplification")
+    exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
+    low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
+    intronic=c("intron_variant")
+    intergenic=c("intergenic_variant")
+    peaks$pch[peaks$consequence %in% lof]=4
+    peaks$col[peaks$consequence %in% lof]="firebrick"
+    peaks$pch[peaks$consequence %in% high]=17
+    peaks$col[peaks$consequence %in% high]="orange"
+    peaks$pch[peaks$consequence %in% exonic]=25
+    peaks$col[peaks$consequence %in% exonic]="goldenrod"
+    peaks$pch[peaks$consequence %in% low]=25
+    peaks$col[peaks$consequence %in% low]="brown"
+    peaks$pch[peaks$consequence %in% intronic]=18
+    peaks$col[peaks$consequence %in% intronic]="brown"
+    peaks$pch[peaks$consequence %in% intergenic]=19
+    peaks$col[peaks$consequence %in% intergenic]="darkgray"
 }
 
 plot_manhattan(retm, peaks)

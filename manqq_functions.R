@@ -291,35 +291,36 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
       r=GET(paste(server, ext, sep = ""), content_type("application/json"))
       stop_for_status(r)
       restr=fromJSON(toJSON(content(r)))
-      restr=restr[restr$biotype=="protein_coding",]
-      restr$dist1=abs(pos-unlist(restr$start))
-      restr$dist2=abs(pos-unlist(restr$end))
-      restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-      restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-      restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-      print("overlap no")
-      print(restr)
-      print(class(restr))
-      print(class(restr$gene_id))
-      print(length(restr))
-      if(nrow(restr)>0){
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-      dist=min(restr$dist)
 
-      # get consequence
-      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      # stop_for_status(r)
-      # restsnp=fromJSON(toJSON(content(r)))
-      cons=data.table()
-      for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+      if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
+        restr=restr[restr$biotype=="protein_coding",]
+        restr$dist1=abs(pos-unlist(restr$start))
+        restr$dist2=abs(pos-unlist(restr$end))
+        restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+        restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+        restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+        print("overlap no")
+        print(restr)
+        print(class(restr))
+        print(class(restr$gene_id))
+        print(length(restr))
+        gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+        dist=min(restr$dist)
+  
+        # get consequence
+        # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
+        # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+        # stop_for_status(r)
+        # restsnp=fromJSON(toJSON(content(r)))
+        cons=data.table()
+        for(i in alleles) {
+          cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+        }
+        return(c(gene,dist,cons$most_severe_consequence[[1]]))
+      }else{
+        return(c("none", "0", "intergenic_variant"))
       }
-      return(c(gene,dist,cons$most_severe_consequence[[1]]))
-  }else{
-  return(c("none", "0", "intergenic_variant"))
-  }
-    # if it's inside a gene, do stuff
+        # if it's inside a gene, do stuff
     } else {
     #print("overlap yes")
     #print(restr)
