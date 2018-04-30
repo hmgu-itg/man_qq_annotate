@@ -53,6 +53,19 @@ parser$add_argument("--image",
                     default="pdf",
                     help="The filetype to save plots to (png or pdf)",
                     metavar="[character]")
+
+parser$add_argument("--af-col", 
+                    type="character",
+                    default="af",
+                    help="The column NAME for the allele frequency column, default af",
+                    metavar="[character]")
+
+parser$add_argument("--maf-filter", 
+                    type="double",
+                    default=-0.0,
+                    help="The significance threshold for MAF filter, default 0.0.",
+                    metavar="[double]")
+
 #
 #parser$add_argument("--sig-thresh-line", 
 #                    type="double",
@@ -84,9 +97,12 @@ args=parser$parse_args()
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
-d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval))
+d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
 #d=fread(readcmd, select=c(1,3,5,6,14))
 
+if (args$maf>0.0){
+d=d[which(d$af>=args$maf),]
+}
 
 ## QQ PLOT
 ret=qqplot(d[,args$pval,with=FALSE][[1]])
@@ -121,7 +137,7 @@ if(args$image=="pdf") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
 }
 retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
-print("HELLO")
+
 peaks=get_peaks_to_annotate(retm)
 
 if(nrow(peaks)==0) {
