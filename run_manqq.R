@@ -4,7 +4,15 @@ suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(zoo))
 suppressPackageStartupMessages(library(data.table))
 
-suppressPackageStartupMessages(source("~sh29/repos/man_qq/manqq_functions.R"))
+
+#print(getSrcDirectory(function(x) {x}))
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.basename <- dirname(script.name)
+print(paste("Sourcing",script.name))
+
+suppressPackageStartupMessages(source(paste(script.basename, "manqq_functions.R", sep="/")))
 
 # run ./run_manqq.R --help or ./run_manqq -h to display help message
 

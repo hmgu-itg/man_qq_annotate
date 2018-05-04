@@ -356,6 +356,7 @@ isColor <- function(x) {
 qqplot = function(data, X_GRID=800, Y_GRID=800){
   ### QQ plot
   ## Expects data to be a vector of p values
+  print("entering qq function")
   obspval <- sort(data)
   nrows=length(data)
   logobspval <- -(log10(obspval))
