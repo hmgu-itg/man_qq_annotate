@@ -86,10 +86,10 @@ readcmd=paste("zcat ", args$infile, sep=" ")
 
 d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval))
 #d=fread(readcmd, select=c(1,3,5,6,14))
-
+setnames(d, c("chr","pos","a1","a2","p"))
 
 ## QQ PLOT
-ret=qqplot(d[,args$pval,with=FALSE][[1]])
+ret=qqplot(d[,p])
 
 nn=nrow(d)
 upper=rep(NA, nrow(ret))
@@ -107,7 +107,7 @@ xx =  -log10((ret$order)/(nn+1))
 polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
 lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
 lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
-lambdavalue=lambdaCalc(d[,args$pval,with=FALSE][[1]])
+lambdavalue=lambdaCalc(d[,p])
 text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
 abline(a=0, b=1, col="firebrick", lwd=2)
 points(ret$x, ret$y, pch=20, col="dodgerblue4")
@@ -120,15 +120,15 @@ if(args$image=="pdf") {
 } else if(args$image=="png") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
 }
-retm=mhp(d[,args$chr,with=FALSE][[1]], d[,args$pos,with=FALSE][[1]], d[,args$pval,with=FALSE][[1]])
+retm=mhp(d[,chr], d[,pos], d[,p])
 print("HELLO")
-peaks=get_peaks_to_annotate(retm)
+peaks=get_peaks_to_annotate(retm,d,build=args$build)
 
 if(nrow(peaks)==0) {
     peaks=NULL
 }else{
     context=apply(peaks, 1, function(x){
-      u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"]))
+      u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
       if(length(u)<3){u[3]="unknown"};
       return(u);
       })

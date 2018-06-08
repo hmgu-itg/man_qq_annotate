@@ -132,7 +132,7 @@ return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labp
   
 }
 
-get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
+get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
   # expects an object from the mhp function
   ret=NULL
   retm=manhattan_object
@@ -143,14 +143,14 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
     mmin=dict_entry$min;
     mmax=dict_entry$max;
     chr=dict_entry$chr;
-    peakdata=d[d$chr==chr & d$ps>mmin & d$ps<mmax,];
-    peakdata=peakdata[peakdata$p_score==min(peakdata$p_score),];
+    peakdata=assoc[chr==chr & pos>mmin & pos<mmax,];
+    peakdata=peakdata[peakdata$p==min(peakdata$p),];
     peakdata=peakdata[1,];
     peakdata$plotpos=xpos
-    peakdata$ploty=-log10(peakdata$p_score)
+    peakdata$ploty=-log10(peakdata$p)
     ret=rbind(ret,peakdata)
   }
-  ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
+  ret=data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty)
   ret$build=build
   return(ret)
   }else{
@@ -168,7 +168,7 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
     pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
     axes=F,bty="n", ylim=c(0, yl))
-
+  
   if(!is.null(annotation_object)){
     segments(x0=annotation_object$plotpos, 
     y0=annotation_object$ploty, 
@@ -299,11 +299,11 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
         restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
         restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
         restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-        print("overlap no")
-        print(restr)
-        print(class(restr))
-        print(class(restr$gene_id))
-        print(length(restr))
+        # print("overlap no")
+        # print(restr)
+        # print(class(restr))
+        # print(class(restr$gene_id))
+        # print(length(restr))
         gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
         dist=min(restr$dist)
   
