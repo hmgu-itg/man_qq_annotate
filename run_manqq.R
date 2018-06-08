@@ -4,7 +4,15 @@ suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(zoo))
 suppressPackageStartupMessages(library(data.table))
 
-suppressPackageStartupMessages(source("~sh29/repos/man_qq/manqq_functions.R"))
+
+#print(getSrcDirectory(function(x) {x}))
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+script.basename <- dirname(script.name)
+print(paste("Sourcing",script.name))
+
+suppressPackageStartupMessages(source(paste(script.basename, "manqq_functions.R", sep="/")))
 
 # run ./run_manqq.R --help or ./run_manqq -h to display help message
 
@@ -53,6 +61,19 @@ parser$add_argument("--image",
                     default="pdf",
                     help="The filetype to save plots to (png or pdf)",
                     metavar="[character]")
+
+parser$add_argument("--af-col", 
+                    type="character",
+                    default="af",
+                    help="The column NAME for the allele frequency column, default af",
+                    metavar="[character]")
+
+parser$add_argument("--maf-filter", 
+                    type="double",
+                    default=-0.0,
+                    help="The significance threshold for MAF filter, default 0.0.",
+                    metavar="[double]")
+
 #
 #parser$add_argument("--sig-thresh-line", 
 #                    type="double",
@@ -84,9 +105,16 @@ args=parser$parse_args()
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
-d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval))
+d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
 #d=fread(readcmd, select=c(1,3,5,6,14))
+
 setnames(d, c("chr","pos","a1","a2","p"))
+
+
+if (args$maf>0.0){
+d=d[which(d$af>=args$maf),]
+}
+
 
 ## QQ PLOT
 ret=qqplot(d[,p])
@@ -120,9 +148,11 @@ if(args$image=="pdf") {
 } else if(args$image=="png") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
 }
+
 retm=mhp(d[,chr], d[,pos], d[,p])
 print("HELLO")
 peaks=get_peaks_to_annotate(retm,d,build=args$build)
+
 
 if(nrow(peaks)==0) {
     peaks=NULL
