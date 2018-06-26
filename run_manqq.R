@@ -74,13 +74,12 @@ parser$add_argument("--maf-filter",
                     help="The significance threshold for MAF filter, default 0.0.",
                     metavar="[double]")
 
-#
-#parser$add_argument("--sig-thresh-line", 
-#                    type="double",
-#                    default=-1.0,
-#                    help="The significance threshold for the line",
-#                    metavar="[double]")
-#
+parser$add_argument("--sig", 
+                    type="double",
+                    default=5e-8,
+                    help="The significance threshold to use for peak annotation",
+                    metavar="[double]")
+
 #parser$add_argument("--ylim", 
 #                    type="integer",
 #                    default=-1.0,
@@ -107,12 +106,12 @@ readcmd=paste("zcat ", args$infile, sep=" ")
 
 d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
 #d=fread(readcmd, select=c(1,3,5,6,14))
+setcolorder(d, c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
 
-setnames(d, c("chr","pos","a1","a2","p"))
-
+setnames(d, c("chr","pos","a1","a2","p", "af"))
 
 if (args$maf>0.0){
-d=d[which(d$af>=args$maf),]
+    d=d[af>=args$maf]
 }
 
 
@@ -150,9 +149,9 @@ if(args$image=="pdf") {
 }
 
 retm=mhp(d[,chr], d[,pos], d[,p])
-print("HELLO")
-peaks=get_peaks_to_annotate(retm,d,build=args$build)
-
+print("Finding peaks...")
+peaks=get_peaks_to_annotate(retm,d,build=args$build,signif=args$sig)
+print(paste0("Number of peaks: ",nrow(peaks)))
 
 if(nrow(peaks)==0) {
     peaks=NULL
@@ -192,7 +191,7 @@ if(nrow(peaks)==0) {
     peaks$col[peaks$consequence %in% intergenic]="darkgray"
 }
 
-plot_manhattan(retm, peaks)
+plot_manhattan(retm, peaks, signif=args$sig)
 dev.off()
 
 

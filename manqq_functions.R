@@ -330,7 +330,7 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
       for(i in alleles) {
         cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
       }
-      return(c(gene,0,cons$most_severe_consequence))
+      return(c(gene,0,cons$most_severe_consequence[[1]]))
 
     }
     
