@@ -80,6 +80,12 @@ parser$add_argument("--sig",
                     help="The significance threshold to use for peak annotation",
                     metavar="[double]")
 
+parser$add_argument("--maxpeaks", 
+                    type="integer",
+                    default=30,
+                    help="The maximum number of peaks to annotate",
+                    metavar="[integer]")
+
 #parser$add_argument("--ylim", 
 #                    type="integer",
 #                    default=-1.0,
@@ -114,6 +120,7 @@ if (args$maf>0.0){
     d=d[af>=args$maf]
 }
 
+d[!(is.na(p))]
 
 ## QQ PLOT
 ret=qqplot(d[,p])
@@ -156,6 +163,10 @@ print(paste0("Number of peaks: ",nrow(peaks)))
 if(nrow(peaks)==0) {
     peaks=NULL
 }else{
+
+    if(nrow(peaks)>30) {
+        peaks=peaks[1:30,]
+    }
     context=apply(peaks, 1, function(x){
       u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
       if(length(u)<3){u[3]="unknown"};
@@ -191,7 +202,7 @@ if(nrow(peaks)==0) {
     peaks$col[peaks$consequence %in% intergenic]="darkgray"
 }
 
-plot_manhattan(retm, peaks, signif=args$sig)
+plot_manhattan(retm, peaks, signif=args$sig, MAX_NUM_PEAKS=args$maxpeaks)
 dev.off()
 
 
