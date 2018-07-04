@@ -120,7 +120,7 @@ if (args$maf>0.0){
     d=d[af>=args$maf]
 }
 
-d[!(is.na(p))]
+d=d[!(is.na(p))]
 
 ## QQ PLOT
 ret=qqplot(d[,p])
