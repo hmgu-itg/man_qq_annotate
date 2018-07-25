@@ -155,7 +155,7 @@ if(args$image=="pdf") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
 }
 
-retm=mhp(d[,chr], d[,pos], d[,p])
+retm=mhp(d[,chr], d[,pos], d[,p],signif=args$sig)
 print("Finding peaks...")
 peaks=get_peaks_to_annotate(retm,d,build=args$build,signif=args$sig)
 print(paste0("Number of peaks: ",nrow(peaks)))
