@@ -138,19 +138,20 @@ get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
   retm=manhattan_object
   sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
   if(length(sig>1)){
-  for(xpos in sig){
-    dict_entry=retm$posdict[retm$posdict$coord==xpos,];
-    mmin=dict_entry$min;
-    mmax=dict_entry$max;
-    chr=dict_entry$chr;
-    peakdata=assoc[chr==chr & pos>mmin & pos<mmax,];
-    peakdata=peakdata[peakdata$p==min(peakdata$p),];
-    peakdata=peakdata[1,];
-    peakdata$plotpos=xpos
-    peakdata$ploty=-log10(peakdata$p)
-    ret=rbind(ret,peakdata)
-  }
-  ret=data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty)
+    for(xpos in sig){
+      dict_entry=retm$posdict[retm$posdict$coord==xpos,];
+      mmin=dict_entry$min;
+      mmax=dict_entry$max;
+      chr=dict_entry$chr;
+      peakdata=assoc[chr==chr & pos>mmin & pos<mmax,];
+      peakdata=peakdata[peakdata$p==min(peakdata$p),];
+      peakdata=peakdata[1,];
+      peakdata$plotpos=xpos
+      peakdata$ploty=-log10(peakdata$p)
+      ret=rbind(ret,peakdata)
+    }
+
+  ret=data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
   ret$build=build
   return(ret)
   }else{
@@ -165,11 +166,17 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 
   print(max(manhattan_object$newcoords$y))
 
+
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
     pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
     axes=F,bty="n", ylim=c(0, yl))
   
   if(!is.null(annotation_object)){
+
+    # sh29: split the peaks into the ones to annotate and the ones to only colour in
+#    peaks.col.only=annotation_object[act=="c"]
+#    annotation_object=annotation_object[act=="a"]
+
     segments(x0=annotation_object$plotpos, 
     y0=annotation_object$ploty, 
     y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
@@ -197,8 +204,8 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         lty=2, lwd=2, col="lightgray")
       text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
         srt=45, cex=1.4, pos=4, font=2)
-      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos))
-        , pch=annotation_object$pch, col=annotation_object$col, font=2, cex=1.5)
+      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)), 
+        pch=annotation_object$pch, col=annotation_object$col, font=2, cex=1.5)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
     axis(2,las=1,cex=1.5)

@@ -120,7 +120,7 @@ if (args$maf>0.0){
     d=d[af>=args$maf]
 }
 
-d=d[!(is.na(p))]
+d=d[!(is.na(p)) & p!=0]
 
 ## QQ PLOT
 ret=qqplot(d[,p])
@@ -164,9 +164,19 @@ if(nrow(peaks)==0) {
     peaks=NULL
 }else{
 
-    if(nrow(peaks)>30) {
-        peaks=peaks[1:30,]
+ 
+    # if there are a lot of hits, annotate only the most significant ones
+    if(nrow(peaks)>args$maxpeaks) {
+      setorder(peaks,p)
+#      peaks.col.only=peaks[MAX_NUM_PEAKS:nrow(peaks),]
+#      peaks.col.only[,gene:=NA]
+#      peaks.col.only[,distance:=NA]
+#      peaks.col.only[,consequence:=NA]
+#      peaks.col.only[,act:="c"]
+      peaks=peaks[1:args$maxpeaks,]
+#      peaks[,act:="a"]
     }
+
     context=apply(peaks, 1, function(x){
       u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
       if(length(u)<3){u[3]="unknown"};
@@ -174,10 +184,12 @@ if(nrow(peaks)==0) {
       })
     
     context=as.data.frame(t(context))
-    
     colnames(context)=c("gene", "distance", "consequence")
     context$distance=as.numeric(as.character(context$distance))
     peaks=cbind(peaks, context)
+    if(exists("peaks.col.only")) {
+        peaks=rbind(peaks,peaks.col.only)
+    }
     peaks$truelabels=as.character(peaks$gene)
     peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
     peaks$pch=15
