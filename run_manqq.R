@@ -86,6 +86,47 @@ parser$add_argument("--maxpeaks",
                     help="The maximum number of peaks to annotate",
                     metavar="[integer]")
 
+parser$add_argument("--no-qq",
+                    action="store_true",
+                    help="Don't plot QQ.")
+
+parser$add_argument("--no-man",
+                    action="store_true",
+                    help="Don't plot Manhattan.")
+
+parser$add_argument("--no-annot",
+                    action="store_true",
+                    help="Disable peak annotation even if peaks are present.")
+
+parser$add_argument("--no-distance",
+                    action="store_true",
+                    help="Don't add very useful distance to gene info.")
+
+parser$add_argument("--man-height",
+                    type="integer",
+                    default=6,
+                    help="Force height of Manhattan in inches. Can have unpredictable consequences (some of which you may regret).",
+                    metavar="[integer]")
+
+parser$add_argument("--upper-margin",
+                    type="double",
+                    default=2.0,
+                    help="Y limit of Manhattan plot in units of maximum data points. Even more unpredictable than the above.",
+                    metavar="[double]")
+
+parser$add_argument("--annot-cex",
+                    type="double",
+                    default=1.1,
+                    help="Size factor for annotations.",
+                    metavar="[double]")
+
+parser$add_argument("--axes-cex",
+                    type="double",
+                    default=1.3,
+                    help="Size factor for axes and labels.",
+                    metavar="[double]")
+
+
 #parser$add_argument("--ylim", 
 #                    type="integer",
 #                    default=-1.0,
@@ -123,6 +164,7 @@ if (args$maf>0.0){
 d=d[!(is.na(p)) & p!=0]
 
 ## QQ PLOT
+if(! args$no_qq){
 ret=qqplot(d[,p])
 
 nn=nrow(d)
@@ -146,13 +188,14 @@ text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1
 abline(a=0, b=1, col="firebrick", lwd=2)
 points(ret$x, ret$y, pch=20, col="dodgerblue4")
 dev.off()
+}
 
-
+if(! args$no_man){
 ## MANHATTAN PLOT
 if(args$image=="pdf") {
-    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=6)    
+    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=args$man_height)    
 } else if(args$image=="png") {
-    png(paste(args$outfile, ".man.png", sep=""), width=10, height=6, units="in",res=300)
+    png(paste(args$outfile, ".man.png", sep=""), width=10, height=args$man_height, units="in",res=300)
 }
 
 retm=mhp(d[,chr], d[,pos], d[,p],signif=args$sig)
@@ -160,7 +203,7 @@ print("Finding peaks...")
 peaks=get_peaks_to_annotate(retm,d,build=args$build,signif=args$sig)
 print(paste0("Number of peaks: ",nrow(peaks)))
 
-if(nrow(peaks)==0) {
+if(nrow(peaks)==0 | args$no_annot) {
     peaks=NULL
 }else{
 
@@ -191,7 +234,11 @@ if(nrow(peaks)==0) {
         peaks=rbind(peaks,peaks.col.only)
     }
     peaks$truelabels=as.character(peaks$gene)
-    peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
+    if(args$no_distance){
+    	peaks$truelabels[peaks$dist>0]=as.character(peaks$gene[peaks$dist>0])
+    }else{
+	peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
+    }
     peaks$pch=15
     peaks$col="forestgreen"
     lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
@@ -216,5 +263,5 @@ if(nrow(peaks)==0) {
 
 plot_manhattan(retm, peaks, signif=args$sig, MAX_NUM_PEAKS=args$maxpeaks)
 dev.off()
-
+}
 

@@ -162,14 +162,17 @@ get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
 
 plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8, MAX_NUM_PEAKS=30){
   
-  yl=ifelse(!is.null(annotation_object), 2*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
+  yl=ifelse(!is.null(annotation_object), args$upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
 
   print(max(manhattan_object$newcoords$y))
 
 
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
-    pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
-    axes=F,bty="n", ylim=c(0, yl))
+    pch=20, col=as.character(manhattan_object$newcoords$col), xlab="",
+    axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="")
+
+  axis(2, las=1, cex=1.5,at=seq(0, 2*(max(manhattan_object$newcoords$y)%/%2+1), by=2))
+ mtext(expression(paste("-log"[10], "(p)")), side=2, line=2.5, at=(max(manhattan_object$newcoords$y)%/%2+1), cex=args$axes_cex)
   
   if(!is.null(annotation_object)){
 
@@ -203,17 +206,17 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
         lty=2, lwd=2, col="lightgray")
       text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
-        srt=45, cex=1.4, pos=4, font=2)
+        srt=45, cex=args$annot_cex, pos=4, font=4)
       points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)), 
-        pch=annotation_object$pch, col=annotation_object$col, font=2, cex=1.5)
+        pch=annotation_object$pch, col=annotation_object$col, font=2, cex=args$annot_cex)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
-    axis(2,las=1,cex=1.5)
+    #axis(2,las=1,cex=1.5)
   for (i in 1:22){
     pp=ifelse(i %% 2 == 0, 0, 1)
-    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=1.5)
+    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=args$axes_cex)
   }
-  mtext("Chromosome",1,at=1,cex=1.5,line=0)
+  mtext("Chromosome",1,at=1,cex=args$axes_cex,line=0)
 
 }
 

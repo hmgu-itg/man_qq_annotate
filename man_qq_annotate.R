@@ -189,8 +189,9 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
       segments(x0=annotation_object$plotpos,x1=labelpos, 
         y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
         lty=2, lwd=2, col="lightgray")
-      text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
-        srt=45, cex=1.4, pos=4, font=2)
+      	write(annotation_object$truelabels, standard_error())
+	text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
+        srt=45, cex=0.8, pos=4, font=2)
       points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos))
         , pch=annotation_object$pch, bg=annotation_object$col, col=annotation_object$col, font=2, cex=1.5)
   }
