@@ -259,6 +259,7 @@ getVepSnp=function(chr,pos,allele,build=38,
                    name=NULL,
                    query="vep/human/region/%i:%i-%i/%s?content-type=application/json",
                    allow.tries=2) {
+  allele=toupper(allele)
   if( build == 38) {
     server="http://rest.ensembl.org"
     } else if( build == 37) {
