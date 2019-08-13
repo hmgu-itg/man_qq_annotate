@@ -282,7 +282,9 @@ if(!("error" %in% names(vep_data))) {
 }
 
 get_variant_context=function(chr,pos,a1, a2,build=38) {
-    alleles=c(a1, a2)
+print(paste("getting context for ", chr, ":", pos, a1, a2)) 
+   alleles=c(a1, a2)
+alleles=toupper(alleles)
     if(build==38) {
       server="http://rest.ensembl.org"
       } else if(build==37) {
@@ -295,14 +297,14 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
     stop_for_status(r)
     #return(content(r))
     restr=fromJSON(toJSON(content(r), null="null"))
-    
     # if it's intergenic find closest gene
     if(length(restr)==0) {
-      ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
+	st=pos-1e6
+	if(st<1){st=1}
+      ext=paste("/overlap/region/human/", chr, ":", st, "-", pos+1e6, "?feature=gene", sep="")
       r=GET(paste(server, ext, sep = ""), content_type("application/json"))
       stop_for_status(r)
       restr=fromJSON(toJSON(content(r)))
-
       if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
         restr=restr[restr$biotype=="protein_coding",]
         restr$dist1=abs(pos-unlist(restr$start))
