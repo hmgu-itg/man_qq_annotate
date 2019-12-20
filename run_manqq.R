@@ -20,67 +20,67 @@ suppressPackageStartupMessages(source(paste(script.basename, "manqq_functions.R"
 parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
 
 
-parser$add_argument("--chr-col", 
+parser$add_argument("--chr-col",
                     type="character",
                     default="chr",
                     help="The column NAME for the chromosome column, default chr",
                     metavar="[character]")
 
-parser$add_argument("--pval-col", 
+parser$add_argument("--pval-col",
                     type="character",
                     default="p_score",
                     help="The column NAME for the chromosome column, default p_score",
                     metavar="[character]")
 
-parser$add_argument("--pos-col", 
+parser$add_argument("--pos-col",
                     type="character",
                     default="ps",
                     help="The column NAME for the chromosome column, default ps",
                     metavar="[character]")
 
-parser$add_argument("--a1", 
+parser$add_argument("--a1",
                     type="character",
                     default="allele1",
                     help="The column NAME for the effect allele column, default allele1",
                     metavar="[character]")
 
-parser$add_argument("--a2", 
+parser$add_argument("--a2",
                     type="character",
                     default="allele0",
                     help="The column NAME for the non-effect column, default allele0",
                     metavar="[character]")
 
-parser$add_argument("--build", 
+parser$add_argument("--build",
                     type="integer",
                     default=38,
                     help="The genome build the positions refer to",
                     metavar="[integer]")
 
-parser$add_argument("--image", 
+parser$add_argument("--image",
                     type="character",
                     default="pdf",
                     help="The filetype to save plots to (png or pdf)",
                     metavar="[character]")
 
-parser$add_argument("--af-col", 
+parser$add_argument("--af-col",
                     type="character",
                     default="af",
                     help="The column NAME for the allele frequency column, default af",
                     metavar="[character]")
 
-parser$add_argument("--maf-filter", 
+parser$add_argument("--maf-filter",
                     type="double",
                     default=-0.0,
                     help="The significance threshold for MAF filter, default 0.0.",
                     metavar="[double]")
 
-parser$add_argument("--sig", 
+parser$add_argument("--sig",
                     type="double",
                     default=5e-8,
                     help="The significance threshold to use for peak annotation",
                     metavar="[double]")
 
-parser$add_argument("--maxpeaks", 
+parser$add_argument("--maxpeaks",
                     type="integer",
                     default=30,
                     help="The maximum number of peaks to annotate",
@@ -127,13 +127,13 @@ parser$add_argument("--axes-cex",
                     metavar="[double]")
 
 
-#parser$add_argument("--ylim", 
+#parser$add_argument("--ylim",
 #                    type="integer",
 #                    default=-1.0,
 #                    help="The y-axis limit (-log10(p))",
 #                    metavar="[integer]")
 
-#parser$add_argument("--title", 
+#parser$add_argument("--title",
 #                    type="character",
 #                    default="",
 #                    help="An optional text title to add to each plot",
@@ -174,7 +174,7 @@ lower=rep(NA, nrow(ret))
 k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
 if(args$image=="pdf") {
-    pdf(paste(args$outfile, ".qq.pdf", sep=""))    
+    pdf(paste(args$outfile, ".qq.pdf", sep=""))
 } else if(args$image=="png") {
     png(paste(args$outfile, ".qq.png", sep=""))
 }
@@ -193,7 +193,7 @@ dev.off()
 if(! args$no_man){
 ## MANHATTAN PLOT
 if(args$image=="pdf") {
-    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=args$man_height)    
+    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=args$man_height)
 } else if(args$image=="png") {
     png(paste(args$outfile, ".man.png", sep=""), width=10, height=args$man_height, units="in",res=300)
 }
@@ -206,8 +206,9 @@ print(paste0("Number of peaks: ",nrow(peaks)))
 if(nrow(peaks)==0 | args$no_annot) {
     peaks=NULL
 }else{
+#    print("PEAKS")
+#    print(peaks)
 
- 
     # if there are a lot of hits, annotate only the most significant ones
     if(nrow(peaks)>args$maxpeaks) {
       setorder(peaks,p)
@@ -219,13 +220,15 @@ if(nrow(peaks)==0 | args$no_annot) {
       peaks=peaks[1:args$maxpeaks,]
 #      peaks[,act:="a"]
     }
+#    print("PEAKS")
+#    print(peaks)
 
     context=apply(peaks, 1, function(x){
       u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
       if(length(u)<3){u[3]="unknown"};
       return(u);
       })
-    
+
     context=as.data.frame(t(context))
     colnames(context)=c("gene", "distance", "consequence")
     context$distance=as.numeric(as.character(context$distance))
@@ -264,4 +267,3 @@ if(nrow(peaks)==0 | args$no_annot) {
 plot_manhattan(retm, peaks, signif=args$sig, MAX_NUM_PEAKS=args$maxpeaks)
 dev.off()
 }
-

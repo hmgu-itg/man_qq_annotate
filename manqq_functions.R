@@ -6,18 +6,18 @@ library(data.table)
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
-  ## chr, ps and p_lrt, representing 
+  ## chr, ps and p_lrt, representing
   obspval <- as.numeric(p)
   chr <- as.numeric(chr)
   pos <- as.numeric(ps)
   print(length(chr))
   print(length(pos))
   obsmax <- trunc(max(-log10(obspval)))+1
-  sort.ind <- order(chr, pos) 
+  sort.ind <- order(chr, pos)
   chr <- chr[sort.ind]
   pos <- pos[sort.ind]
   obspval <- obspval[sort.ind]
-  
+
   ## Two main vectors for new coordinates, should not be more than picture resolution
   newx=rep(NA, X_RES*Y_RES)
   newy=rep(NA, X_RES*Y_RES)
@@ -27,7 +27,7 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   t=list()
   posdict=list()
 
-  
+
   xres=(3000000000/X_RES)*2
   yres=(obsmax/Y_RES)*2
   breaksy=seq(0, obsmax, by=yres)
@@ -40,26 +40,26 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   coli=rgb(255, 255, 255, maxColorValue=255, alpha=0)
   posi=1
   s=1
-  
-  
+
+
   ## Initializing variables for the main loop
   size=0
   numpoints=0
   labpos=0
-  
-  
+
+
   for ( i in 1:22 ){
     curchr=which(chr==i)
     curcol=ifelse (i%%2==0, col1, col2)
-    
+
     t[[i]]=pos[curchr]
-    
+
     # min and max pos and size of cur chr
     mi[i]=min(t[[i]])
     ma[i]=max(t[[i]])
     size[i+1]=ma[i]-mi[i]
     numpoints[i+1]=length(t[[i]])
-    
+
     ## Correcting positions: subtracting the start offset and adding length of previous chromosomes.
     ## Elements of T should now be continuous (notice that i is a sum.)
     offset=sum(size[1:i])
@@ -68,20 +68,20 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
     posdict[[i]]=data.frame(pos=t[[i]])
     t[[i]]=(t[[i]]-mi[i])+offset+i
     posdict[[i]]$newpos=t[[i]]
-    
+
     ## Label positions (for later)
     labpos[i]=offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
-    
+
     ## Create x grid for current chromosome
     topvalue=(offset+size[i+1]+i)
     breaks=seq((offset+i), topvalue, by=xres)
-    
+
     ## seq does not go till the end if by is specified
     if(breaks[length(breaks)] != topvalue){breaks=c(breaks, topvalue)}
-    
+
     ## compute histogram of SNPs according to grid
     h=hist(t[[i]], breaks=breaks, plot=FALSE)
-    
+
     ## add in the hist coordinates for reference (multiplies exec time by 2 :/ - sadness!)
     posdict[[i]]$poscat=cut(posdict[[i]]$newpos, breaks=breaks, labels=h$mids)
     posdict[[i]]$poscat=as.numeric(as.character(posdict[[i]]$poscat))+((i-1)*12000000)
@@ -90,17 +90,17 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
     ## -get all corresponding y values
     ## -compute histogram along y grid
     ## -fill non-zero intervals with single middle value
-    
+
     baseoffset= sum(numpoints[1:i])
-    
+
     for( j in 1:(length(h$counts)) ){
       suboffset= sum(h$counts[1:j])-h$counts[j]+baseoffset
       subset= locY[(suboffset+1):(suboffset+h$counts[j])]
-      
-      
+
+
       hy= hist(subset, breaks=breaksy, plot=FALSE)
-      
-      
+
+
       addendum= hy$mids[hy$counts>0]
       l= length(addendum)
       if(l==0){next}
@@ -109,12 +109,12 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
       colvect=rep(curcol, l)
       colvect[addendum>-log10(signif)]=col3
       col[posi:(posi+l-1)]=colvect
-      
-      
+
+
       posi= posi+l;
     }
-    
-    
+
+
   }
   posdict=do.call("rbind", posdict)
   u=aggregate(posdict$pos, by=list(posdict$chr, posdict$poscat), FUN=min)
@@ -128,8 +128,8 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   newx=na.trim(newx)
   newy=na.trim(newy)
   col=na.trim(col)
-return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))  
-  
+return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
+
 }
 
 get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
@@ -137,14 +137,24 @@ get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
   ret=NULL
   retm=manhattan_object
   sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
+#  print("GPTA : ")
+#  print(retm$newcoords[retm$newcoords$y>-log10(signif),])
   if(length(sig>1)){
     for(xpos in sig){
       dict_entry=retm$posdict[retm$posdict$coord==xpos,];
-      mmin=dict_entry$min;
-      mmax=dict_entry$max;
-      chr=dict_entry$chr;
-      peakdata=assoc[chr==chr & pos>mmin & pos<mmax,];
+#      print(paste("GPTA : for entry", xpos))
+#      print(dict_entry)
+      mmin=unlist(dict_entry$min)[1];
+      mmax=unlist(dict_entry$max)[1];
+      chr_ref=unlist(dict_entry$chr)[1];
+      #assoc$chr=as.numeric(as.character(assoc$chr))
+      peakdata=assoc[(assoc$chr==chr_ref) & (assoc$pos>mmin) & (assoc$pos<mmax),];
+#      print("")
+#      print(peakdata)
+#      print("")
       peakdata=peakdata[peakdata$p==min(peakdata$p),];
+#      print("GPTA: extracted minimum")
+#      print(peakdata)
       peakdata=peakdata[1,];
       peakdata$plotpos=xpos
       peakdata$ploty=-log10(peakdata$p)
@@ -161,31 +171,31 @@ get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
 
 
 plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8, MAX_NUM_PEAKS=30){
-  
+
   yl=ifelse(!is.null(annotation_object), args$upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
 
-  print(max(manhattan_object$newcoords$y))
+#  print(max(manhattan_object$newcoords$y))
 
 
-  plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
+  plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y,
     pch=20, col=as.character(manhattan_object$newcoords$col), xlab="",
     axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="")
 
   axis(2, las=1, cex=1.5,at=seq(0, 2*(max(manhattan_object$newcoords$y)%/%2+1), by=2))
  mtext(expression(paste("-log"[10], "(p)")), side=2, line=2.5, at=(max(manhattan_object$newcoords$y)%/%2+1), cex=args$axes_cex)
-  
+
   if(!is.null(annotation_object)){
 
     # sh29: split the peaks into the ones to annotate and the ones to only colour in
 #    peaks.col.only=annotation_object[act=="c"]
 #    annotation_object=annotation_object[act=="a"]
 
-    segments(x0=annotation_object$plotpos, 
-    y0=annotation_object$ploty, 
+    segments(x0=annotation_object$plotpos,
+    y0=annotation_object$ploty,
     y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
     espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
     labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),by=espacement/MAX_NUM_PEAKS)
-      
+
       labelpos=apply(annotation_object, 1, function(x) {
         if(length(labelslots)==0) {
           print("Error: too many peaks.")
@@ -193,21 +203,21 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         }
         slotdist=abs(labelslots-as.numeric(x["plotpos"]))
         idx=(1:length(slotdist))[slotdist==min(slotdist)]
-        print(idx)
+        #print(idx)
         ret=labelslots[idx]
-        print(ret)
-        print(labelslots)
+        #print(ret)
+        #print(labelslots)
         labelslots<<-labelslots[-idx]
-        print(labelslots)
+        #print(labelslots)
         return(ret)
         })
-        
-      segments(x0=annotation_object$plotpos,x1=labelpos, 
+
+      segments(x0=annotation_object$plotpos,x1=labelpos,
         y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
         lty=2, lwd=2, col="lightgray")
       text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
         srt=45, cex=args$annot_cex, pos=4, font=4)
-      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)), 
+      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)),
         pch=annotation_object$pch, col=annotation_object$col, font=2, cex=args$annot_cex)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
@@ -282,7 +292,7 @@ if(!("error" %in% names(vep_data))) {
 }
 
 get_variant_context=function(chr,pos,a1, a2,build=38) {
-print(paste("getting context for ", chr, ":", pos, a1, a2)) 
+print(paste("getting context for ", chr, ":", pos, a1, a2))
    alleles=c(a1, a2)
 alleles=toupper(alleles)
     if(build==38) {
@@ -319,7 +329,7 @@ alleles=toupper(alleles)
         # print(length(restr))
         gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
         dist=min(restr$dist)
-  
+
         # get consequence
         # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
         # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
@@ -346,7 +356,7 @@ alleles=toupper(alleles)
       return(c(gene,0,cons$most_severe_consequence[[1]]))
 
     }
-    
+
 }
 
 lambdaCalc = function(pval,round=NULL) {
@@ -361,7 +371,7 @@ lambdaCalc = function(pval,round=NULL) {
 ## Function added by Arthur
 isColor <- function(x) {
      sapply(x, function(X) {
-         tryCatch(is.matrix(col2rgb(X)), 
+         tryCatch(is.matrix(col2rgb(X)),
                   error = function(e) FALSE)
          })
      }
@@ -377,7 +387,7 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
   logexppval <- -(log10( (exppval-0.5)/length(exppval)))
   obsmax <- trunc(max(logobspval))+1
   expmax <- trunc(max(logexppval))+1
-  
+
   yres=(max(logobspval)-min(logobspval))/Y_GRID
   xres=(max(logexppval)-min(logexppval))/X_GRID
   ymax=max(logobspval)
@@ -400,7 +410,7 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
     }
     lowx=logexppval[index]
     lowy=logobspval[index]
-    
+
     if(before==index){next;}
     newx[i]=logexppval[before]-0.5*xres
     newy[i]=logobspval[before]-0.5*yres
@@ -410,6 +420,5 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
   newx=na.trim(newx)
   newy=na.trim(newy)
   ord=na.trim(ord)
-return(data.frame(x=newx, y=newy, order=ord))  
+return(data.frame(x=newx, y=newy, order=ord))
 }
-
