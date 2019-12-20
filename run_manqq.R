@@ -242,8 +242,10 @@ if(nrow(peaks)==0 | args$no_annot) {
     if(args$no_distance){
     	peaks$truelabels[peaks$dist>0]=as.character(peaks$gene[peaks$dist>0])
     }else{
-	peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kbp)", sep=""))
+	peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kb)", sep=""))
     }
+    print("FINAL PKS")
+    print(peaks)
     peaks$pch=15
     peaks$col="forestgreen"
     lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")

@@ -325,7 +325,7 @@ alleles=toupper(alleles)
       if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
         restr=restr[restr$biotype=="protein_coding",]
         print("overlap no, distance")
-        print(restr)
+        #print(restr)
         restr$dist1=abs(unlist(restr$start)-pos)
         restr$dist2=abs(unlist(restr$end)-pos)
         #restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
@@ -334,7 +334,7 @@ alleles=toupper(alleles)
         #print(restr)
         #restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
         #restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-        print(restr)
+        #print(restr)
         gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
         dist=min(restr$dist)
         print(paste("minimum reached for gene", gene, "at", dist))
@@ -346,9 +346,17 @@ alleles=toupper(alleles)
         # restsnp=fromJSON(toJSON(content(r)))
         cons=NULL
         for(i in alleles) {
-          cons=ifelse(is.null(cons), getVepSnp(chr=chr,pos=pos,allele=i,build=build), rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build)))
+          #print(getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+          tobind=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+          #cons<<-rbind(cons, tobind, fill=T)
+          #print("CONS");print(tobind)
+          #print(cons)
+          if(!is.null(tobind)){
+            if(!is.null(cons)){stop("problem: both alleles have consequences")}
+            cons=tobind$most_severe_consequence[1]}
         }
-        return(c(gene,dist,cons$most_severe_consequence[[1]]))
+        print(cons)
+        return(c(gene,dist,cons))
       }else{
         return(c("none", "0", "intergenic_variant"))
       }
@@ -362,15 +370,19 @@ alleles=toupper(alleles)
       gene=paste(unlist(restr$external_name), collapse=",")
       cons=NULL
       for(i in alleles) {
-        print(paste("allele", i))
-	       print(colnames(cons))
+          #print(paste("allele", i))
+	       #print(colnames(cons))
 	       topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
-	       print(colnames(topaste))
-	       if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
+	       #print(colnames(topaste))
+	       #if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
 
-	        cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
+	        #cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
+          if(!is.null(topaste)){
+            if(!is.null(cons)){stop("problem: both alleles have consequences")}
+            cons=topaste$most_severe_consequence[1]
+          }
       }
-      return(c(gene,0,cons$most_severe_consequence[[1]]))
+      return(c(gene,0,cons))
 
     }
 
