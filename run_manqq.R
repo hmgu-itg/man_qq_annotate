@@ -1,4 +1,4 @@
-
+#!/software/R-3.3.0/bin/Rscript
 # Source in packages and functions
 suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(zoo))
@@ -127,11 +127,13 @@ parser$add_argument("--axes-cex",
                     metavar="[double]")
 
 
-#parser$add_argument("--ylim",
-#                    type="integer",
-#                    default=-1.0,
-#                    help="The y-axis limit (-log10(p))",
-#                    metavar="[integer]")
+
+parser$add_argument("--ylim",
+                    type="integer",
+                    default=-1.0,
+                    help="The y-axis limit (-log10(p))",
+                    metavar="[double]")
+
 
 #parser$add_argument("--title",
 #                    type="character",

@@ -1,3 +1,4 @@
+#!/software/R-3.3.0/bin/Rscript
 
 library(httr)
 library(jsonlite)
@@ -174,7 +175,9 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
 
   yl=ifelse(!is.null(annotation_object), args$upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
 
-#  print(max(manhattan_object$newcoords$y))
+  yl=ifelse(args$ylim>-1,args$ylim, yl)
+  print(max(manhattan_object$newcoords$y))
+
 
 
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y,
@@ -345,13 +348,18 @@ alleles=toupper(alleles)
       }
         # if it's inside a gene, do stuff
     } else {
-    #print("overlap yes")
-    #print(restr)
+    print("overlap yes")
+    print(restr)
       restr$dist=0
       gene=paste(unlist(restr$external_name), collapse=",")
       cons=data.table()
       for(i in alleles) {
-        cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+        print(paste("allele", i))
+	print(colnames(cons))
+	topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+	print(colnames(topaste))
+	if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
+	cons=rbind(cons,topaste)
       }
       return(c(gene,0,cons$most_severe_consequence[[1]]))
 
