@@ -310,8 +310,12 @@ alleles=toupper(alleles)
     stop_for_status(r)
     #return(content(r))
     restr=fromJSON(toJSON(content(r), null="null"))
+    ## if the snp overlaps with something else than a prot coding gene we don't care
+    if(length(restr)>0 & !("protein_coding" %in% restr$biotype)) {
+      restr=NULL
+    }
     # if it's intergenic find closest gene
-    if(length(restr)==0) {
+  if(length(restr)==0) {
 	st=pos-1e6
 	if(st<1){st=1}
       ext=paste("/overlap/region/human/", chr, ":", st, "-", pos+1e6, "?feature=gene", sep="")
@@ -320,27 +324,29 @@ alleles=toupper(alleles)
       restr=fromJSON(toJSON(content(r)))
       if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
         restr=restr[restr$biotype=="protein_coding",]
-        restr$dist1=abs(pos-unlist(restr$start))
-        restr$dist2=abs(pos-unlist(restr$end))
-        restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-        restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-        restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-        # print("overlap no")
-        # print(restr)
-        # print(class(restr))
-        # print(class(restr$gene_id))
-        # print(length(restr))
+        print("overlap no, distance")
+        print(restr)
+        restr$dist1=abs(unlist(restr$start)-pos)
+        restr$dist2=abs(unlist(restr$end)-pos)
+        #restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+        restr$dist=pmin(restr$dist1, restr$dist2)
+        #print("====")
+        #print(restr)
+        #restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+        #restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+        print(restr)
         gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
         dist=min(restr$dist)
-
+        print(paste("minimum reached for gene", gene, "at", dist))
+        #stop()
         # get consequence
         # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
         # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
         # stop_for_status(r)
         # restsnp=fromJSON(toJSON(content(r)))
-        cons=data.table()
+        cons=NULL
         for(i in alleles) {
-          cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
+          cons=ifelse(is.null(cons), getVepSnp(chr=chr,pos=pos,allele=i,build=build), rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build)))
         }
         return(c(gene,dist,cons$most_severe_consequence[[1]]))
       }else{
@@ -349,17 +355,20 @@ alleles=toupper(alleles)
         # if it's inside a gene, do stuff
     } else {
     print("overlap yes")
+    ## we are sure from the above test that there is at least 1 prot coding gene
+    restr=restr[restr$biotype=="protein_coding",]
     print(restr)
       restr$dist=0
       gene=paste(unlist(restr$external_name), collapse=",")
-      cons=data.table()
+      cons=NULL
       for(i in alleles) {
         print(paste("allele", i))
-	print(colnames(cons))
-	topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
-	print(colnames(topaste))
-	if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
-	cons=rbind(cons,topaste)
+	       print(colnames(cons))
+	       topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+	       print(colnames(topaste))
+	       if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
+
+	        cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
       }
       return(c(gene,0,cons$most_severe_consequence[[1]]))
 
