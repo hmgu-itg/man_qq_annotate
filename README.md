@@ -1,14 +1,10 @@
 # man_qq_annotate
-Creates Manhattan and QQ plots with annotated peaks.
+Creates Manhattan and QQ plots with annotated peaks for sequencing-based GWAS outputs, by thinning the dataset to what the eye can see.
 
 ## Example :
+For a GCTA output, use the following:
+```
+./run_manqq.R --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
+```
 
-```
-/software/R-3.4.0/bin/Rscript ~sh29/repos/man_qq/run_manqq.R \
-                --chr-col chr \
-                --pos-col ps \
-                --pval-col p_score \
-                --image png \
-                ${dir}/META/META.ROR1/MANOLIS.META.ROR1.maf0.001.assoc.txt.gz \
-                MANOLIS.ROR1.maf0.001.assoc
-```
+The default column names are configured for a GEMMA output file. Input files can be gzipped or plain. run without arguments for a list of options.
