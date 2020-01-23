@@ -1,6 +1,12 @@
 # man_qq_annotate
 Creates Manhattan and QQ plots with annotated peaks for sequencing-based GWAS outputs, by thinning the dataset to what the eye can see.
 
+## Prerequisites
+This package needs R along with the libraries `argparse`, `zoo`, `data.table`.
+
+## Installation
+`git clone` the repo, then optionally modify the shebang (1st, starting with `#!`) line of `run_manqq.R` to point it to your local R installation. If you do do this, don't forget to `chmod +x` it.
+
 ## Example :
 For a GCTA output, use the following:
 ```
