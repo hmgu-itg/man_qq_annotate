@@ -1,4 +1,4 @@
-#!/software/R-3.3.0/bin/Rscript
+#!/software/R-3.6.1/bin/Rscript
 # Source in packages and functions
 suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(zoo))

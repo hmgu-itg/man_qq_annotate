@@ -352,7 +352,7 @@ alleles=toupper(alleles)
           #print("CONS");print(tobind)
           #print(cons)
           if(!is.null(tobind)){
-            if(!is.null(cons)){stop("problem: both alleles have consequences")}
+            if(!is.null(cons)){warning("problem: both alleles have consequences:");print(cons); print(tobind)}
             cons=tobind$most_severe_consequence[1]}
         }
         print(cons)
@@ -378,7 +378,7 @@ alleles=toupper(alleles)
 
 	        #cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
           if(!is.null(topaste)){
-            if(!is.null(cons)){stop("problem: both alleles have consequences")}
+            if(!is.null(cons)){warning("problem: both alleles have consequences");print(cons); print(tobind)}
             cons=topaste$most_severe_consequence[1]
           }
       }
@@ -394,6 +394,7 @@ lambdaCalc = function(pval,round=NULL) {
   if (is.null(round)==FALSE) {
     lambda=round(lambda,round)
   }
+  print(paste("lambda is", lambda))
   return(lambda)
 }
 
