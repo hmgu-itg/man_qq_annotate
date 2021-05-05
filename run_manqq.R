@@ -1,4 +1,4 @@
-#!/software/R-3.6.1/bin/Rscript
+#!/usr/bin/env Rscript
 # Source in packages and functions
 suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(zoo))
@@ -176,9 +176,11 @@ lower=rep(NA, nrow(ret))
 k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
 if(args$image=="pdf") {
-    pdf(paste(args$outfile, ".qq.pdf", sep=""))
+    qqfile = paste(args$outfile, ".qq.pdf", sep="")
+    pdf(qqfile)
 } else if(args$image=="png") {
-    png(paste(args$outfile, ".qq.png", sep=""))
+    qqfile = paste(args$outfile, ".qq.png", sep="")
+    png(qqfile)
 }
 plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
 xx =  -log10((ret$order)/(nn+1))
@@ -186,6 +188,10 @@ polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gr
 lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
 lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
 lambdavalue=lambdaCalc(d[,p])
+# Save lambda value to a separate file
+lambdafile=paste0(args$outfile, ".lambda.txt")
+cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\t")
+
 text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
 abline(a=0, b=1, col="firebrick", lwd=2)
 points(ret$x, ret$y, pch=20, col="dodgerblue4")
