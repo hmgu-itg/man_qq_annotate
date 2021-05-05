@@ -190,7 +190,7 @@ lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
 lambdavalue=lambdaCalc(d[,p])
 # Save lambda value to a separate file
 lambdafile=paste0(args$outfile, ".lambda.txt")
-cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\t")
+cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\n")
 
 text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
 abline(a=0, b=1, col="firebrick", lwd=2)
