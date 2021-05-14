@@ -215,28 +215,30 @@ if(!args$no_man){
 
     if(nrow(peaks)==0 | args$no_annot) {
         peaks=NULL
-    }else{
-    #    print("PEAKS")
-    #    print(peaks)
-
+    } else {
         # if there are a lot of hits, annotate only the most significant ones
         if(nrow(peaks)>args$maxpeaks) {
-        setorder(peaks,p)
-    #      peaks.col.only=peaks[MAX_NUM_PEAKS:nrow(peaks),]
-    #      peaks.col.only[,gene:=NA]
-    #      peaks.col.only[,distance:=NA]
-    #      peaks.col.only[,consequence:=NA]
-    #      peaks.col.only[,act:="c"]
-        peaks=peaks[1:args$maxpeaks,]
-    #      peaks[,act:="a"]
+          setorder(peaks,p)
+          # peaks.col.only=peaks[MAX_NUM_PEAKS:nrow(peaks),]
+          # peaks.col.only[,gene:=NA]
+          # peaks.col.only[,distance:=NA]
+          # peaks.col.only[,consequence:=NA]
+          # peaks.col.only[,act:="c"]
+          peaks=peaks[1:args$maxpeaks,]
+          # peaks[,act:="a"]
         }
-    #    print("PEAKS")
-    #    print(peaks)
+        # print("PEAKS")
+        # print(peaks)
 
-        context=apply(peaks, 1, function(x){
-        u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
-        if(length(u)<3){u[3]="unknown"};
-        return(u);
+        # A matrix with
+        # 1st row: Overlapping gene names?
+        # 2nd row: Distance
+        # 3rd row: variant type (e.g. intron_variant)
+        # Row-wise apply
+        context = apply(peaks, 1, function(x){
+            u = unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"], build=args$build))
+            if (length(u)<3){u[3]="unknown"}
+            return(u)
         })
 
         context=as.data.frame(t(context))
