@@ -9,6 +9,10 @@ Description: Creates Manhattan and QQ plots with annotated
     dataset to what the eye can see.
 Encoding: UTF-8
 Suggests: 
-    testthat
 Imports: 
-    
+    rjson,
+    data.table,
+    jsonlite,
+    httr,
+    zoo,
+    argparse
