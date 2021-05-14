@@ -4,8 +4,17 @@ library(httr)
 library(jsonlite)
 library(data.table)
 
+#' Manhatten
+#' 
+#' @param chr Chromosome column of data.table
+#' @param ps Position column of data.table
+#' @param p P-value column of data.table
+#' @param X_RES
+#' @param Y_RES
+#' @param signif Significance threshold (default: 5e-8)
+#' @return A list with 'newcoords', 'posdict', and 'labpos' attributes
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
-  ##Manhat plot
+  ## Manhat plot
   ## Expects data object to be a list containing three named columns
   ## chr, ps and p_lrt, representing
   obspval <- as.numeric(p)
@@ -129,43 +138,50 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   newx=na.trim(newx)
   newy=na.trim(newy)
   col=na.trim(col)
-return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
 
+  return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
 }
 
-get_peaks_to_annotate=function (manhattan_object,assoc, signif=5e-8, build=38){
+#' Get peaks to annotate
+#' 
+#' @param manhattan_object Output object of `mhp` function
+#' @param assoc data.table with columns chr, pos, a1, a2, p, and af
+#' @param signif Significance threshold (default: 5e-8)
+#' @param build Genome assembly number (38 or 37)
+#' @return A data.table with columns: plotpos, ploty, p, build
+get_peaks_to_annotate = function(manhattan_object, assoc, signif=5e-8, build=38) {
   # expects an object from the mhp function
-  ret=NULL
-  retm=manhattan_object
-  sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
-#  print("GPTA : ")
-#  print(retm$newcoords[retm$newcoords$y>-log10(signif),])
+  ret = NULL
+  retm = manhattan_object
+  sig = unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
+  # print("GPTA : ")
+  # print(retm$newcoords[retm$newcoords$y>-log10(signif),])
   if(length(sig>1)){
     for(xpos in sig){
-      dict_entry=retm$posdict[retm$posdict$coord==xpos,];
-#      print(paste("GPTA : for entry", xpos))
-#      print(dict_entry)
-      mmin=unlist(dict_entry$min)[1];
-      mmax=unlist(dict_entry$max)[1];
-      chr_ref=unlist(dict_entry$chr)[1];
-      #assoc$chr=as.numeric(as.character(assoc$chr))
-      peakdata=assoc[(assoc$chr==chr_ref) & (assoc$pos>mmin) & (assoc$pos<mmax),];
-#      print("")
-#      print(peakdata)
-#      print("")
-      peakdata=peakdata[peakdata$p==min(peakdata$p),];
-#      print("GPTA: extracted minimum")
-#      print(peakdata)
-      peakdata=peakdata[1,];
-      peakdata$plotpos=xpos
-      peakdata$ploty=-log10(peakdata$p)
-      ret=rbind(ret,peakdata)
+      dict_entry = retm$posdict[retm$posdict$coord==xpos,];
+      # print(paste("GPTA : for entry", xpos))
+      # print(dict_entry)
+      mmin = unlist(dict_entry$min)[1];
+      mmax = unlist(dict_entry$max)[1];
+      chr_ref = unlist(dict_entry$chr)[1];
+      # assoc$chr=as.numeric(as.character(assoc$chr))
+      peakdata = assoc[(assoc$chr==chr_ref) & (assoc$pos>mmin) & (assoc$pos<mmax),];
+      # print("")
+      # print(peakdata)
+      # print("")
+      peakdata = peakdata[peakdata$p==min(peakdata$p),];
+      # print("GPTA: extracted minimum")
+      # print(peakdata)
+      peakdata = peakdata[1,];
+      peakdata$plotpos = xpos
+      peakdata$ploty = -log10(peakdata$p)
+      ret = rbind(ret,peakdata)
     }
 
-  ret=data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
-  ret$build=build
+  ret = data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
+  ret$build = build
   return(ret)
-  }else{
+  } else {
     return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
 }
@@ -190,8 +206,8 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
   if(!is.null(annotation_object)){
 
     # sh29: split the peaks into the ones to annotate and the ones to only colour in
-#    peaks.col.only=annotation_object[act=="c"]
-#    annotation_object=annotation_object[act=="a"]
+    # peaks.col.only=annotation_object[act=="c"]
+    # annotation_object=annotation_object[act=="a"]
 
     segments(x0=annotation_object$plotpos,
     y0=annotation_object$ploty,
@@ -206,12 +222,12 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         }
         slotdist=abs(labelslots-as.numeric(x["plotpos"]))
         idx=(1:length(slotdist))[slotdist==min(slotdist)]
-        #print(idx)
+        # print(idx)
         ret=labelslots[idx]
-        #print(ret)
-        #print(labelslots)
+        # print(ret)
+        # print(labelslots)
         labelslots<<-labelslots[-idx]
-        #print(labelslots)
+        # print(labelslots)
         return(ret)
         })
 
@@ -224,7 +240,7 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         pch=annotation_object$pch, col=annotation_object$col, font=2, cex=args$annot_cex)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
-    #axis(2,las=1,cex=1.5)
+    # axis(2, las=1, cex=1.5)
   for (i in 1:22){
     pp=ifelse(i %% 2 == 0, 0, 1)
     mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=args$axes_cex)

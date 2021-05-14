@@ -153,127 +153,129 @@ args=parser$parse_args()
 
 readcmd=paste("zcat ", args$infile, sep=" ")
 
-d=fread(readcmd, select=c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
+d = fread(readcmd, select=c(args$chr, args$pos, args$a1, args$a2, args$pval, args$af))
 #d=fread(readcmd, select=c(1,3,5,6,14))
 setcolorder(d, c(args$chr,args$pos,args$a1,args$a2,args$pval,args$af))
 
-setnames(d, c("chr","pos","a1","a2","p", "af"))
+setnames(d, c("chr", "pos", "a1", "a2", "p", "af"))
 
+# Exclude variants with MAF below specified value (default: 0.0)
 if (args$maf>0.0){
     d=d[af>=args$maf]
 }
 
-d=d[!(is.na(p)) & p!=0]
+d = d[!(is.na(p)) & p!=0] # Exclude variants with p value NA or 0
 
-## QQ PLOT
-if(! args$no_qq){
-ret=qqplot(d[,p])
+## Make QQ PLOT
+if(!args$no_qq){
+    ret=qqplot(d[,p])
 
-nn=nrow(d)
-upper=rep(NA, nrow(ret))
-k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
-lower=rep(NA, nrow(ret))
-k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
+    nn=nrow(d)
+    upper=rep(NA, nrow(ret))
+    k=0;for(i in ret$order){k=k+1;upper[k]=qbeta(0.95, i, nn-i+1)}
+    lower=rep(NA, nrow(ret))
+    k=0;for(i in ret$order){k=k+1;lower[k]=qbeta(0.05, i, nn-i+1)}
 
-if(args$image=="pdf") {
-    qqfile = paste(args$outfile, ".qq.pdf", sep="")
-    pdf(qqfile)
-} else if(args$image=="png") {
-    qqfile = paste(args$outfile, ".qq.png", sep="")
-    png(qqfile)
-}
-plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
-xx =  -log10((ret$order)/(nn+1))
-polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
-lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
-lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
-lambdavalue=lambdaCalc(d[,p])
-# Save lambda value to a separate file
-lambdafile=paste0(args$outfile, ".lambda.txt")
-cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\n")
-
-text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
-abline(a=0, b=1, col="firebrick", lwd=2)
-points(ret$x, ret$y, pch=20, col="dodgerblue4")
-dev.off()
-}
-
-if(! args$no_man){
-## MANHATTAN PLOT
-if(args$image=="pdf") {
-    pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=args$man_height)
-} else if(args$image=="png") {
-    png(paste(args$outfile, ".man.png", sep=""), width=10, height=args$man_height, units="in",res=300)
-}
-
-retm=mhp(d[,chr], d[,pos], d[,p],signif=args$sig)
-print("Finding peaks...")
-peaks=get_peaks_to_annotate(retm,d,build=args$build,signif=args$sig)
-print(paste0("Number of peaks: ",nrow(peaks)))
-
-if(nrow(peaks)==0 | args$no_annot) {
-    peaks=NULL
-}else{
-#    print("PEAKS")
-#    print(peaks)
-
-    # if there are a lot of hits, annotate only the most significant ones
-    if(nrow(peaks)>args$maxpeaks) {
-      setorder(peaks,p)
-#      peaks.col.only=peaks[MAX_NUM_PEAKS:nrow(peaks),]
-#      peaks.col.only[,gene:=NA]
-#      peaks.col.only[,distance:=NA]
-#      peaks.col.only[,consequence:=NA]
-#      peaks.col.only[,act:="c"]
-      peaks=peaks[1:args$maxpeaks,]
-#      peaks[,act:="a"]
+    if(args$image=="pdf") {
+        qqfile = paste(args$outfile, ".qq.pdf", sep="")
+        pdf(qqfile)
+    } else if(args$image=="png") {
+        qqfile = paste(args$outfile, ".qq.png", sep="")
+        png(qqfile)
     }
-#    print("PEAKS")
-#    print(peaks)
+    plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+    xx =  -log10((ret$order)/(nn+1))
+    polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
+    lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
+    lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
+    lambdavalue=lambdaCalc(d[,p])
+    # Save lambda value to a separate file
+    lambdafile=paste0(args$outfile, ".lambda.txt")
+    cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\n")
 
-    context=apply(peaks, 1, function(x){
-      u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
-      if(length(u)<3){u[3]="unknown"};
-      return(u);
-      })
+    text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
+    abline(a=0, b=1, col="firebrick", lwd=2)
+    points(ret$x, ret$y, pch=20, col="dodgerblue4")
+    dev.off()
+}
 
-    context=as.data.frame(t(context))
-    colnames(context)=c("gene", "distance", "consequence")
-    context$distance=as.numeric(as.character(context$distance))
-    peaks=cbind(peaks, context)
-    if(exists("peaks.col.only")) {
-        peaks=rbind(peaks,peaks.col.only)
+## Make MANHATTAN PLOT
+if(!args$no_man){
+    
+    if(args$image=="pdf") {
+        pdf(paste(args$outfile, ".man.pdf", sep=""), width=10, height=args$man_height)
+    } else if(args$image=="png") {
+        png(paste(args$outfile, ".man.png", sep=""), width=10, height=args$man_height, units="in",res=300)
     }
-    peaks$truelabels=as.character(peaks$gene)
-    if(args$no_distance){
-    	peaks$truelabels[peaks$dist>0]=as.character(peaks$gene[peaks$dist>0])
+
+    retm = mhp(d[,chr], d[,pos], d[,p], signif=args$sig)
+    print("Finding peaks...")
+    peaks = get_peaks_to_annotate(retm, d, build=args$build, signif=args$sig)
+    print(paste0("Number of peaks: ", nrow(peaks)))
+
+    if(nrow(peaks)==0 | args$no_annot) {
+        peaks=NULL
     }else{
-	peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kb)", sep=""))
-    }
-    print("FINAL PKS")
-    print(peaks)
-    peaks$pch=15
-    peaks$col="forestgreen"
-    lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
-    high=c("stop_lost", "start_lost", "transcript_amplification")
-    exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
-    low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
-    intronic=c("intron_variant")
-    intergenic=c("intergenic_variant")
-    peaks$pch[peaks$consequence %in% lof]=4
-    peaks$col[peaks$consequence %in% lof]="firebrick"
-    peaks$pch[peaks$consequence %in% high]=17
-    peaks$col[peaks$consequence %in% high]="orange"
-    peaks$pch[peaks$consequence %in% exonic]=25
-    peaks$col[peaks$consequence %in% exonic]="goldenrod"
-    peaks$pch[peaks$consequence %in% low]=25
-    peaks$col[peaks$consequence %in% low]="brown"
-    peaks$pch[peaks$consequence %in% intronic]=18
-    peaks$col[peaks$consequence %in% intronic]="brown"
-    peaks$pch[peaks$consequence %in% intergenic]=19
-    peaks$col[peaks$consequence %in% intergenic]="darkgray"
-}
+    #    print("PEAKS")
+    #    print(peaks)
 
-plot_manhattan(retm, peaks, signif=args$sig, MAX_NUM_PEAKS=args$maxpeaks)
-dev.off()
+        # if there are a lot of hits, annotate only the most significant ones
+        if(nrow(peaks)>args$maxpeaks) {
+        setorder(peaks,p)
+    #      peaks.col.only=peaks[MAX_NUM_PEAKS:nrow(peaks),]
+    #      peaks.col.only[,gene:=NA]
+    #      peaks.col.only[,distance:=NA]
+    #      peaks.col.only[,consequence:=NA]
+    #      peaks.col.only[,act:="c"]
+        peaks=peaks[1:args$maxpeaks,]
+    #      peaks[,act:="a"]
+        }
+    #    print("PEAKS")
+    #    print(peaks)
+
+        context=apply(peaks, 1, function(x){
+        u=unlist(get_variant_context(as.numeric(x["chr"]), as.numeric(x["ps"]), x["a1"], x["a2"],build=args$build))
+        if(length(u)<3){u[3]="unknown"};
+        return(u);
+        })
+
+        context=as.data.frame(t(context))
+        colnames(context)=c("gene", "distance", "consequence")
+        context$distance=as.numeric(as.character(context$distance))
+        peaks=cbind(peaks, context)
+        if(exists("peaks.col.only")) {
+            peaks=rbind(peaks,peaks.col.only)
+        }
+        peaks$truelabels=as.character(peaks$gene)
+        if(args$no_distance){
+            peaks$truelabels[peaks$dist>0]=as.character(peaks$gene[peaks$dist>0])
+        }else{
+        peaks$truelabels[peaks$dist>0]=paste(as.character(peaks$gene[peaks$dist>0]), paste(" (", ceiling(peaks$distance[peaks$dist>0]/1000), "kb)", sep=""))
+        }
+        print("FINAL PKS")
+        print(peaks)
+        peaks$pch=15
+        peaks$col="forestgreen"
+        lof=c("transcript_ablation", "splice_acceptor_variant", "splice_donor_variant", "stop_gained", "frameshift_variant")
+        high=c("stop_lost", "start_lost", "transcript_amplification")
+        exonic=c("inframe_insertion", "inframe_deletion", "missense_variant", "protein_altering_variant")
+        low=c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
+        intronic=c("intron_variant")
+        intergenic=c("intergenic_variant")
+        peaks$pch[peaks$consequence %in% lof]=4
+        peaks$col[peaks$consequence %in% lof]="firebrick"
+        peaks$pch[peaks$consequence %in% high]=17
+        peaks$col[peaks$consequence %in% high]="orange"
+        peaks$pch[peaks$consequence %in% exonic]=25
+        peaks$col[peaks$consequence %in% exonic]="goldenrod"
+        peaks$pch[peaks$consequence %in% low]=25
+        peaks$col[peaks$consequence %in% low]="brown"
+        peaks$pch[peaks$consequence %in% intronic]=18
+        peaks$col[peaks$consequence %in% intronic]="brown"
+        peaks$pch[peaks$consequence %in% intergenic]=19
+        peaks$col[peaks$consequence %in% intergenic]="darkgray"
+    }
+
+    plot_manhattan(retm, peaks, signif=args$sig, MAX_NUM_PEAKS=args$maxpeaks)
+    dev.off()
 }
