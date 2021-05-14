@@ -1,0 +1,14 @@
+Package: ManQQ
+Version: 0.0.0.9000
+Authors@R:
+    person("Arthur", "Gilly", email = "arthur.gilly@helmholtz-muenchen.de", role = c("aut", "cre"))
+    person("Andrei", "Barysenka", email = "andrei.barysenka@helmholtz-muenchen.de", role = c("cre"))
+    person("Young-Chan", "Park", email = "young-chan.park@helmholtz-muenchen.de", role = c("cre"))
+Description: Creates Manhattan and QQ plots with annotated
+    peaks for sequencing-based GWAS outputs, by thinning the
+    dataset to what the eye can see.
+Encoding: UTF-8
+Suggests: 
+    testthat
+Imports: 
+    
