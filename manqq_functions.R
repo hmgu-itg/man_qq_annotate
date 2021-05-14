@@ -284,10 +284,10 @@ runEnsemblQuery=function(query,allow.tries=2) {
 
 
 
-getVepSnp=function(chr,pos,allele,build=38,
-                   name=NULL,
-                   query="vep/human/region/%i:%i-%i/%s?content-type=application/json",
-                   allow.tries=2) {
+getVepSnp = function(chr, pos, allele, build=38,
+                   name = NULL,
+                   query = "vep/human/region/%i:%i-%i/%s?content-type=application/json",
+                   allow.tries = 2) {
   allele=toupper(allele)
   if( build == 38) {
     server="http://rest.ensembl.org"
@@ -304,40 +304,52 @@ getVepSnp=function(chr,pos,allele,build=38,
   r=GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
   vep_data=fromJSON(toJSON(content(r)))
 
-if(!("error" %in% names(vep_data))) {
-  return(vep_data)
-}
+  if(!("error" %in% names(vep_data))) {
+    return(vep_data)
+  }
 
 }
 
-get_variant_context=function(chr, pos, a1, a2, build=38) {
-  print(paste("getting context for ", chr, ":", pos, a1, a2))
-  alleles=c(a1, a2)
-  alleles=toupper(alleles)
+
+#' Query Ensembl for overlapping genes in a given genomic region
+#' 
+#' @param chr Chromosome
+#' @param start Start genomic position
+#' @param end End genomic position
+#' @param build The assembly to query
+#' @example
+#' query_ensembl_overlap(9, 5073770, 5073770)
+#' query_ensembl_overlap(9, 4973770, 5173770)
+query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   if(build==38) {
     server="http://rest.ensembl.org"
   } else if(build==37) {
     server="http://grch37.rest.ensembl.org"
-  } else {
-    print("Some warning here")
   }
-  ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
-  r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+  ext = paste0("/overlap/region/human/", chr, ":", start, "-", end, "?feature=gene")
+  r = GET(paste(server, ext, sep = ""), content_type("application/json"))
   stop_for_status(r)
-  #return(content(r))
-  restr=fromJSON(toJSON(content(r), null="null"))
+  restr = fromJSON(toJSON(content(r)))
+  return(restr)
+}
+
+
+get_variant_context = function(chr, pos, a1, a2, build=38) {
+  print(paste("getting context for ", chr, ":", pos, a1, a2))
+  alleles = c(a1, a2)
+  alleles = toupper(alleles)
+  
+  restr = query_ensembl_gene_overlap(chr, pos, pos, build)
+
   ## if the snp overlaps with something else than a prot coding gene we don't care
   if(length(restr)>0 & !("protein_coding" %in% restr$biotype)) {
     restr=NULL
   }
   # if it's intergenic find closest gene
   if (length(restr)==0) {
-	  st=pos-1e6
-	  if(st<1){st=1}
-    ext=paste("/overlap/region/human/", chr, ":", st, "-", pos+1e6, "?feature=gene", sep="")
-    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-    stop_for_status(r)
-    restr=fromJSON(toJSON(content(r)))
+    st=pos-1e6
+    if(st<1){st=1}
+    restr = query_ensembl_gene_overlap(chr, st, pos+1e6, build)
     if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
       restr=restr[restr$biotype=="protein_coding",]
       print("overlap no, distance")
@@ -351,7 +363,7 @@ get_variant_context=function(chr, pos, a1, a2, build=38) {
       #restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
       #restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
       #print(restr)
-      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      gene = restr[restr$dist==min(restr$dist),]$external_name[[1]]
       dist=min(restr$dist)
       print(paste("minimum reached for gene", gene, "at", dist))
       #stop()
