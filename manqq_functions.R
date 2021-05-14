@@ -310,98 +310,95 @@ if(!("error" %in% names(vep_data))) {
 
 }
 
-get_variant_context=function(chr,pos,a1, a2,build=38) {
-print(paste("getting context for ", chr, ":", pos, a1, a2))
-   alleles=c(a1, a2)
-alleles=toupper(alleles)
-    if(build==38) {
-      server="http://rest.ensembl.org"
-      } else if(build==37) {
-        server="http://grch37.rest.ensembl.org"
-      } else {
-        print("Some warning here")
-      }
-    ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
+get_variant_context=function(chr, pos, a1, a2, build=38) {
+  print(paste("getting context for ", chr, ":", pos, a1, a2))
+  alleles=c(a1, a2)
+  alleles=toupper(alleles)
+  if(build==38) {
+    server="http://rest.ensembl.org"
+  } else if(build==37) {
+    server="http://grch37.rest.ensembl.org"
+  } else {
+    print("Some warning here")
+  }
+  ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
+  r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+  stop_for_status(r)
+  #return(content(r))
+  restr=fromJSON(toJSON(content(r), null="null"))
+  ## if the snp overlaps with something else than a prot coding gene we don't care
+  if(length(restr)>0 & !("protein_coding" %in% restr$biotype)) {
+    restr=NULL
+  }
+  # if it's intergenic find closest gene
+  if (length(restr)==0) {
+	  st=pos-1e6
+	  if(st<1){st=1}
+    ext=paste("/overlap/region/human/", chr, ":", st, "-", pos+1e6, "?feature=gene", sep="")
     r=GET(paste(server, ext, sep = ""), content_type("application/json"))
     stop_for_status(r)
-    #return(content(r))
-    restr=fromJSON(toJSON(content(r), null="null"))
-    ## if the snp overlaps with something else than a prot coding gene we don't care
-    if(length(restr)>0 & !("protein_coding" %in% restr$biotype)) {
-      restr=NULL
-    }
-    # if it's intergenic find closest gene
-  if(length(restr)==0) {
-	st=pos-1e6
-	if(st<1){st=1}
-      ext=paste("/overlap/region/human/", chr, ":", st, "-", pos+1e6, "?feature=gene", sep="")
-      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      stop_for_status(r)
-      restr=fromJSON(toJSON(content(r)))
-      if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
-        restr=restr[restr$biotype=="protein_coding",]
-        print("overlap no, distance")
-        #print(restr)
-        restr$dist1=abs(unlist(restr$start)-pos)
-        restr$dist2=abs(unlist(restr$end)-pos)
-        #restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
-        restr$dist=pmin(restr$dist1, restr$dist2)
-        #print("====")
-        #print(restr)
-        #restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
-        #restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
-        #print(restr)
-        gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
-        dist=min(restr$dist)
-        print(paste("minimum reached for gene", gene, "at", dist))
-        #stop()
-        # get consequence
-        # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-        # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-        # stop_for_status(r)
-        # restsnp=fromJSON(toJSON(content(r)))
-        cons=NULL
-        for(i in alleles) {
-          #print(getVepSnp(chr=chr,pos=pos,allele=i,build=build))
-          tobind=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
-          #cons<<-rbind(cons, tobind, fill=T)
-          #print("CONS");print(tobind)
-          #print(cons)
-          if(!is.null(tobind)){
-            if(!is.null(cons)){warning("problem: both alleles have consequences:");print(cons); print(tobind)}
-            cons=tobind$most_severe_consequence[1]}
-        }
-        print(cons)
-        return(c(gene,dist,cons))
-      }else{
-        return(c("none", "0", "intergenic_variant"))
+    restr=fromJSON(toJSON(content(r)))
+    if(length(restr)>0 & ("protein_coding" %in% restr$biotype)) {
+      restr=restr[restr$biotype=="protein_coding",]
+      print("overlap no, distance")
+      #print(restr)
+      restr$dist1=abs(unlist(restr$start)-pos)
+      restr$dist2=abs(unlist(restr$end)-pos)
+      #restr$dist=ifelse(restr$dist1<restr$dist2, 1, 0)
+      restr$dist=pmin(restr$dist1, restr$dist2)
+      #print("====")
+      #print(restr)
+      #restr$dist[restr$dist==0]=restr$dist1[restr$dist==0]
+      #restr$dist[restr$dist==1]=restr$dist2[restr$dist==1]
+      #print(restr)
+      gene=restr[restr$dist==min(restr$dist),]$external_name[[1]]
+      dist=min(restr$dist)
+      print(paste("minimum reached for gene", gene, "at", dist))
+      #stop()
+      # get consequence
+      # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
+      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # stop_for_status(r)
+      # restsnp=fromJSON(toJSON(content(r)))
+      cons=NULL
+      for(i in alleles) {
+        #print(getVepSnp(chr=chr,pos=pos,allele=i,build=build))
+        tobind=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+        #cons<<-rbind(cons, tobind, fill=T)
+        #print("CONS");print(tobind)
+        #print(cons)
+        if(!is.null(tobind)){
+          if(!is.null(cons)){warning("problem: both alleles have consequences:");print(cons); print(tobind)}
+          cons=tobind$most_severe_consequence[1]}
       }
+      print(cons)
+      return(c(gene,dist,cons))
+    }else{
+      return(c("none", "0", "intergenic_variant"))
+    }
         # if it's inside a gene, do stuff
-    } else {
+  } else {
     print("overlap yes")
     ## we are sure from the above test that there is at least 1 prot coding gene
     restr=restr[restr$biotype=="protein_coding",]
     print(restr)
-      restr$dist=0
-      gene=paste(unlist(restr$external_name), collapse=",")
-      cons=NULL
-      for(i in alleles) {
-          #print(paste("allele", i))
-	       #print(colnames(cons))
-	       topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
-	       #print(colnames(topaste))
-	       #if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
-
-	        #cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
-          if(!is.null(topaste)){
-            if(!is.null(cons)){warning("problem: both alleles have consequences");print(cons); print(tobind)}
-            cons=topaste$most_severe_consequence[1]
-          }
+    restr$dist=0
+    gene=paste(unlist(restr$external_name), collapse=",")
+    cons=NULL
+    for(i in alleles) {
+      # print(paste("allele", i))
+	    # print(colnames(cons))
+	    topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+	    # print(colnames(topaste))
+	    # if(!("colocated_variants" %in% colnames(topaste))){topaste$colocated_variants=""}
+	    # cons=ifelse(is.null(cons), topaste, rbind(cons,topaste))
+      if(!is.null(topaste)){
+        if(!is.null(cons)){warning("problem: both alleles have consequences");print(cons); print(tobind)}
+        cons=topaste$most_severe_consequence[1]
       }
-      return(c(gene,0,cons))
-
     }
-
+    return(c(gene,0,cons))
+  }
 }
 
 lambdaCalc = function(pval,round=NULL) {
