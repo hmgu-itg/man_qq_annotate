@@ -1,9 +1,4 @@
-#!/usr/bin/env Rscript
 
-library(zoo)
-library(httr)
-library(jsonlite)
-library(data.table)
 
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot

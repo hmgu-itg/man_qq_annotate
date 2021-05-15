@@ -1,8 +1,4 @@
-#!/software/R-3.3.0/bin/Rscript
 
-library(httr)
-library(jsonlite)
-library(data.table)
 
 #' Manhatten
 #' 

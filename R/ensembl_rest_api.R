@@ -1,7 +1,6 @@
 # All the rest API calls are done via rjson
 # TOOD: class/type checking within functions
-suppressPackageStartupMessages(library(rjson))
-suppressPackageStartupMessages(library(data.table))
+
 
 # These are for "Pretty" Population Names rather than the horrible ones that are returned by ensembl
 longpop=c(
