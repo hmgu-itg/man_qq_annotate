@@ -1,7 +1,7 @@
 
 
 #' Manhatten
-#' 
+#'
 #' @param chr Chromosome column of data.table
 #' @param ps Position column of data.table
 #' @param p P-value column of data.table
@@ -130,16 +130,16 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   colnames(posdict)=c("chr", "coord", "min", "max")
 
   # Remove trailing NAs
-  library(zoo)
-  newx=na.trim(newx)
-  newy=na.trim(newy)
-  col=na.trim(col)
+
+  newx = zoo::na.trim(newx)
+  newy = zoo::na.trim(newy)
+  col = zoo::na.trim(col)
 
   return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
 }
 
 #' Get peaks to annotate
-#' 
+#'
 #' @param manhattan_object Output object of `mhp` function
 #' @param assoc data.table with columns chr, pos, a1, a2, p, and af
 #' @param signif Significance threshold (default: 5e-8)
@@ -174,11 +174,11 @@ get_peaks_to_annotate = function(manhattan_object, assoc, signif=5e-8, build=38)
       ret = rbind(ret,peakdata)
     }
 
-  ret = data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
+  ret = data.table::data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
   ret$build = build
   return(ret)
   } else {
-    return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
+    return(data.table::data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
 }
 
@@ -258,7 +258,7 @@ runEnsemblQuery=function(query,allow.tries=2) {
   while(tries != allow.tries && retry==TRUE) {
     retry=FALSE
     data=tryCatch({
-              data=fromJSON(query)
+              data=jsonlite::fromJSON(query)
               },
              warning=function(war) {
                 write(sprintf("[WARN] The query %s generated the following warning: %s",query,war$message),stdout())
@@ -297,8 +297,8 @@ getVepSnp = function(chr, pos, allele, build=38,
     name=sprintf("%i:%i",chr,pos)
   }
   vep_query=sprintf(query,chr,pos,pos,allele)
-  r=GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
-  vep_data=fromJSON(toJSON(content(r)))
+  r=httr::GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
+  vep_data=jsonlite::fromJSON(jsonlite::toJSON(content(r)))
 
   if(!("error" %in% names(vep_data))) {
     return(vep_data)
@@ -308,14 +308,14 @@ getVepSnp = function(chr, pos, allele, build=38,
 
 
 #' Query Ensembl for overlapping genes in a given genomic region
-#' 
+#'
 #' @param chr Chromosome
 #' @param start Start genomic position
 #' @param end End genomic position
 #' @param build The assembly to query
 #' @example
-#' query_ensembl_overlap(9, 5073770, 5073770)
-#' query_ensembl_overlap(9, 4973770, 5173770)
+#' query_ensembl_gene_overlap(9, 5073770, 5073770)
+#' query_ensembl_gene_overlap(9, 4973770, 5173770)
 query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   if(build==38) {
     server="http://rest.ensembl.org"
@@ -323,9 +323,9 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
     server="http://grch37.rest.ensembl.org"
   }
   ext = paste0("/overlap/region/human/", chr, ":", start, "-", end, "?feature=gene")
-  r = GET(paste(server, ext, sep = ""), content_type("application/json"))
-  stop_for_status(r)
-  restr = fromJSON(toJSON(content(r)))
+  r = httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
+  httr::stop_for_status(r)
+  restr = jsonlite::fromJSON(jsonlite::toJSON(content(r)))
   return(restr)
 }
 
@@ -334,7 +334,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
   print(paste("getting context for ", chr, ":", pos, a1, a2))
   alleles = c(a1, a2)
   alleles = toupper(alleles)
-  
+
   restr = query_ensembl_gene_overlap(chr, pos, pos, build)
 
   ## if the snp overlaps with something else than a prot coding gene we don't care
@@ -365,9 +365,9 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       #stop()
       # get consequence
       # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      # stop_for_status(r)
-      # restsnp=fromJSON(toJSON(content(r)))
+      # r=httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # httr::stop_for_status(r)
+      # restsnp=jsonlite::fromJSON(jsonlite::toJSON(content(r)))
       cons=NULL
       for(i in alleles) {
         #print(getVepSnp(chr=chr,pos=pos,allele=i,build=build))
@@ -468,8 +468,9 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
     ord[i]=before
     i=i+1;
   }
-  newx=na.trim(newx)
-  newy=na.trim(newy)
-  ord=na.trim(ord)
+  newx=zoo::na.trim(newx)
+  newy=zoo::na.trim(newy)
+  ord=zoo::na.trim(ord)
 return(data.frame(x=newx, y=newy, order=ord))
 }
+
