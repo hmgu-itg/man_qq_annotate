@@ -298,7 +298,7 @@ getVepSnp = function(chr, pos, allele, build=38,
   }
   vep_query=sprintf(query,chr,pos,pos,allele)
   r=httr::GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
-  vep_data=jsonlite::fromJSON(jsonlite::toJSON(content(r)))
+  vep_data=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
 
   if(!("error" %in% names(vep_data))) {
     return(vep_data)
@@ -325,7 +325,7 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   ext = paste0("/overlap/region/human/", chr, ":", start, "-", end, "?feature=gene")
   r = httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
   httr::stop_for_status(r)
-  restr = jsonlite::fromJSON(jsonlite::toJSON(content(r)))
+  restr = jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
   return(restr)
 }
 
@@ -367,7 +367,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
       # r=httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
       # httr::stop_for_status(r)
-      # restsnp=jsonlite::fromJSON(jsonlite::toJSON(content(r)))
+      # restsnp=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
       cons=NULL
       for(i in alleles) {
         #print(getVepSnp(chr=chr,pos=pos,allele=i,build=build))

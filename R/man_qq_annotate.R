@@ -3,18 +3,18 @@
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
-  ## chr, ps and p_lrt, representing 
+  ## chr, ps and p_lrt, representing
   obspval <- as.numeric(p)
   chr <- as.numeric(chr)
   pos <- as.numeric(ps)
   print(length(chr))
   print(length(pos))
   obsmax <- trunc(max(-log10(obspval)))+1
-  sort.ind <- order(chr, pos) 
+  sort.ind <- order(chr, pos)
   chr <- chr[sort.ind]
   pos <- pos[sort.ind]
   obspval <- obspval[sort.ind]
-  
+
   ## Two main vectors for new coordinates, should not be more than picture resolution
   newx=rep(NA, X_RES*Y_RES)
   newy=rep(NA, X_RES*Y_RES)
@@ -24,7 +24,7 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   t=list()
   posdict=list()
 
-  
+
   xres=(3000000000/X_RES)*2
   yres=(obsmax/Y_RES)*2
   breaksy=seq(0, obsmax, by=yres)
@@ -37,20 +37,20 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   coli=rgb(255, 255, 255, maxColorValue=255, alpha=0)
   posi=1
   s=1
-  
-  
+
+
   ## Initializing variables for the main loop
   size=0
   numpoints=0
   labpos=0
-  
-  
+
+
   for ( i in 1:22 ){
     curchr= which(chr == i)
     curcol=ifelse (i%%2==0, col1, col2)
-    
+
     t[[i]]= pos[curchr]
-    
+
     # min and max pos and size of cur chr
     mi[i]= min(t[[i]])
     ma[i]= max(t[[i]])
@@ -66,19 +66,19 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
     posdict[[i]]$newpos=t[[i]]
     ## Label positions (for later)
     labpos[i]= offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
-    
-    
+
+
     ## Create x grid for current chromosome
     topvalue= (offset+size[i+1]+i)
     breaks= seq((offset+i), topvalue, by=xres)
-    
-    
+
+
     ## seq does not go till the end if by is specified
     if(breaks[length(breaks)] != topvalue){breaks=c(breaks, topvalue)}
-    
+
     ## compute histogram of SNPs according to grid
     h= hist(t[[i]], breaks=breaks, plot=FALSE)
-    
+
     # add in the hist coordinates for reference (multiplies exec time by 2 :/)
     posdict[[i]]$poscat=cut(posdict[[i]]$newpos, breaks=breaks, labels=h$mids)
     posdict[[i]]$poscat=as.numeric(as.character(posdict[[i]]$poscat))+((i-1)*12000000)
@@ -87,17 +87,17 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
     ##  -get all corresponding y values
     ##	-compute histogram along y grid
     ##	-fill non-zero intervals with single middle value
-    
+
     baseoffset= sum(numpoints[1:i])
-    
+
     for( j in 1:(length(h$counts)) ){
       suboffset= sum(h$counts[1:j])-h$counts[j]+baseoffset
       subset= locY[(suboffset+1):(suboffset+h$counts[j])]
-      
-      
+
+
       hy= hist(subset, breaks=breaksy, plot=FALSE)
-      
-      
+
+
       addendum= hy$mids[hy$counts>0]
       l= length(addendum)
       if(l==0){next}
@@ -106,12 +106,12 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
       colvect=rep(curcol, l)
       colvect[addendum>-log10(signif)]=col3
       col[posi:(posi+l-1)]=colvect
-      
-      
+
+
       posi= posi+l;
     }
-    
-    
+
+
   }
   posdict=do.call("rbind", posdict)
   u=aggregate(posdict$pos, by=list(posdict$chr, posdict$poscat), FUN=min)
@@ -121,12 +121,12 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   colnames(posdict)=c("chr", "coord", "min", "max")
 
   # Remove trailing NAs
-  library(zoo)
-  newx=na.trim(newx)
-  newy=na.trim(newy)
-  col=na.trim(col)
-  return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))  
-  
+
+  newx=zoo::na.trim(newx)
+  newy=zoo::na.trim(newy)
+  col=zoo::na.trim(col)
+  return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
+
 }
 
 get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
@@ -147,11 +147,11 @@ get_peaks_to_annotate=function (manhattan_object, signif=5e-8, build=38){
     peakdata$ploty=-log10(peakdata$p_score)
     ret=rbind(ret,peakdata)
   }
-  ret=data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
+  ret=data.table::data.table(chr=ret$chr, ps=ret$ps, a1=ret$allele1, a2=ret$allele0, plotpos=ret$plotpos, ploty=ret$ploty)
   ret$build=build
   return(ret)
   }else{
-    return(data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
+    return(data.table::data.table(chr=numeric(), ps=numeric(), a1=numeric(), a2=numeric(), plotpos=numeric(), ploty=numeric()))
   }
 }
 
@@ -159,17 +159,17 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
   yl=ifelse(!is.null(annotation_object), 1.5*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
 
   print(max(manhattan_object$newcoords$y))
-  plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y, 
+  plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y,
     pch=20, col=as.character(manhattan_object$newcoords$col), ylab="-log10 P-Value",xlab="",
     axes=F,bty="n", ylim=c(0, yl))
   if(!is.null(annotation_object)){
-    segments(x0=annotation_object$plotpos, 
-      y0=annotation_object$ploty, 
+    segments(x0=annotation_object$plotpos,
+      y0=annotation_object$ploty,
       y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
       espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
       labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),
         by=espacement/MAX_NUM_PEAKS)
-      
+
       labelpos=apply(annotation_object, 1, function(x){
         if(length(labelslots)==0){print("Error: too many peaks.");return(x["plotpos"])}
         slotdist=abs(labelslots-as.numeric(x["plotpos"]))
@@ -182,8 +182,8 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
         print(labelslots)
         return(ret)
         })
-        
-      segments(x0=annotation_object$plotpos,x1=labelpos, 
+
+      segments(x0=annotation_object$plotpos,x1=labelpos,
         y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
         lty=2, lwd=2, col="lightgray")
       	write(annotation_object$truelabels, standard_error())
@@ -241,14 +241,14 @@ getVepSnp=function(chr,pos,allele,build=38,
     server="http://rest.ensembl.org"
     } else if( build == 37) {
       server="http://grch37.rest.ensembl.org"
-    }  
+    }
 
   if (is.null(name)==TRUE) {
     name=sprintf("%i:%i",chr,pos)
   }
   vep_query=sprintf(query,chr,pos,pos,allele)
-  r=GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
-  vep_data=fromJSON(toJSON(content(r)))
+  r=httr::GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
+  vep_data=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
 
   if(!("error" %in% names(vep_data))) {
     return(vep_data)
@@ -266,17 +266,17 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
         print("Some warning here")
       }
     ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=gene", sep="")
-    r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-    stop_for_status(r)
-    #return(content(r))
-    restr=fromJSON(toJSON(content(r), null="null"))
-    
+    r=httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
+    httr::stop_for_status(r)
+    #return(httr::content(r))
+    restr=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r), null="null"))
+
     # if it's intergenic find closest gene
     if(length(restr)==0 & ("protein_coding" %in% unique(restr$biotype))) {
       ext=paste("/overlap/region/human/", chr, ":", pos-1e6, "-", pos+1e6, "?feature=gene", sep="")
-      r=GET(paste(server, ext, sep = ""), content_type("application/json"))
+      r=httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
       stop_for_status(r)
-      restr=fromJSON(toJSON(content(r)))
+      restr=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
       restr=restr[restr$biotype=="protein_coding",]
       restr$dist1=abs(pos-unlist(restr$start))
       restr$dist2=abs(pos-unlist(restr$end))
@@ -294,10 +294,10 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
 
       # get consequence
       # ext=paste("/overlap/region/human/", chr, ":", pos, "-", pos, "?feature=variation", sep="")
-      # r=GET(paste(server, ext, sep = ""), content_type("application/json"))
-      # stop_for_status(r)
-      # restsnp=fromJSON(toJSON(content(r)))
-      cons=data.table()
+      # r=httr::GET(paste(server, ext, sep = ""), content_type("application/json"))
+      # httr::stop_for_status(r)
+      # restsnp=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
+      cons=data.table::data.table()
       for(i in alleles) {
         cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build),fill=TRUE)
       }
@@ -311,14 +311,14 @@ get_variant_context=function(chr,pos,a1, a2,build=38) {
 		print(restr)
       restr$dist=0
       gene=paste(unlist(restr$external_name), collapse=",")
-      cons=data.table()
+      cons=data.table::data.table()
       for(i in alleles) {
         cons=rbind(cons,getVepSnp(chr=chr,pos=pos,allele=i,build=build))
       }
       return(c(gene,0,cons$most_severe_consequence))
 
     }
-    
+
 }
 
 lambdaCalc = function(pval,round=NULL) {
@@ -333,7 +333,7 @@ lambdaCalc = function(pval,round=NULL) {
 ## Function added by Arthur
 isColor <- function(x) {
   sapply(x, function(X) {
-    tryCatch(is.matrix(col2rgb(X)), 
+    tryCatch(is.matrix(col2rgb(X)),
       error = function(e) FALSE)
   })
 }
@@ -348,7 +348,7 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
   logexppval <- -(log10( (exppval-0.5)/length(exppval)))
   obsmax <- trunc(max(logobspval))+1
   expmax <- trunc(max(logexppval))+1
-  
+
   yres=(max(logobspval)-min(logobspval))/Y_GRID
   xres=(max(logexppval)-min(logexppval))/X_GRID
   ymax=max(logobspval)
@@ -371,16 +371,16 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
     }
     lowx=logexppval[index]
     lowy=logobspval[index]
-    
+
     if(before==index){next;}
     newx[i]=logexppval[before]-0.5*xres
     newy[i]=logobspval[before]-0.5*yres
     ord[i]=before
     i=i+1;
   }
-  newx=na.trim(newx)
-  newy=na.trim(newy)
-  ord=na.trim(ord)
-  return(data.frame(x=newx, y=newy, order=ord))  
+  newx=zoo::na.trim(newx)
+  newy=zoo::na.trim(newy)
+  ord=zoo::na.trim(ord)
+  return(data.frame(x=newx, y=newy, order=ord))
 }
 
