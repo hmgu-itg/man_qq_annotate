@@ -130,7 +130,7 @@ parser$add_argument("outfile", nargs=1, help="Output file name (with no file ext
 
 args=parser$parse_args()
 
-
+print(paste0('Running ManQQ version: ', packageVersion('manqq')))
 manqq::run_manqq(
     infile = args$infile,
     outfile = args$outfile,
