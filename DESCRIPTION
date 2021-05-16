@@ -18,3 +18,4 @@ Imports:
     httr,
     zoo,
     argparse
+RoxygenNote: 7.1.1
