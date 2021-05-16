@@ -1,11 +1,12 @@
 
 
-manqq.manhattan = function(data, outfile, height, signif = 5e-8, maxpeaks = 30, build = 38, image.type = 'png', no_distance = FALSE, no_annot = FALSE) {
+manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30, build = 38, image.type = 'png', no_distance = FALSE, no_annot = FALSE) {
+
   mhp.file = paste0(outfile, ".man.", image.type)
   if(image.type=="pdf") {
-    pdf(mhp.file, width=10, height=height)
+    pdf(mhp.file, width=10, height = height)
   } else if(image.type=="png") {
-    png(mhp.file, width=10, height=height, units="in",res=300)
+    png(mhp.file, width=10, height = height, units="in", res=300)
   }
 
   retm = mhp(data[,chr], data[,pos], data[,p], signif=signif)
@@ -75,7 +76,7 @@ manqq.manhattan = function(data, outfile, height, signif = 5e-8, maxpeaks = 30, 
 
 
 
-#' Make manhattan object 
+#' Make manhattan object
 #'
 #' @param chr Chromosome column of data.table
 #' @param ps Position column of data.table
@@ -85,7 +86,7 @@ manqq.manhattan = function(data, outfile, height, signif = 5e-8, maxpeaks = 30, 
 #' @param signif Significance threshold (default: 5e-8)
 #' @return A list with 'newcoords', 'posdict', and 'labpos' attributes
 mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
-  ## Manhat plot
+  ##Manhat plot
   ## Expects data object to be a list containing three named columns
   ## chr, ps and p_lrt, representing
   obspval <- as.numeric(p)
@@ -174,11 +175,13 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
 
     baseoffset= sum(numpoints[1:i])
 
-    for(j in 1:(length(h$counts)) ){
+    for( j in 1:(length(h$counts)) ){
       suboffset= sum(h$counts[1:j])-h$counts[j]+baseoffset
       subset= locY[(suboffset+1):(suboffset+h$counts[j])]
 
-      hy = hist(subset, breaks=breaksy, plot=FALSE)
+
+      hy= hist(subset, breaks=breaksy, plot=FALSE)
+
 
       addendum= hy$mids[hy$counts>0]
       l= length(addendum)
@@ -203,11 +206,34 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   colnames(posdict)=c("chr", "coord", "min", "max")
 
   # Remove trailing NAs
-  newx = zoo::na.trim(newx)
-  newy = zoo::na.trim(newy)
-  col = zoo::na.trim(col)
 
+  newx=zoo::na.trim(newx)
+  newy=zoo::na.trim(newy)
+  col=zoo::na.trim(col)
   return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
+}
+
+
+#' Query Ensembl for overlapping genes in a given genomic region
+#'
+#' @param chr Chromosome
+#' @param start Start genomic position
+#' @param end End genomic position
+#' @param build The assembly to query
+#' @examples
+#' query_ensembl_gene_overlap(9, 5073770, 5073770)
+#' query_ensembl_gene_overlap(9, 4973770, 5173770)
+query_ensembl_gene_overlap = function(chr, start, end, build=38) {
+  if(build==38) {
+    server="http://rest.ensembl.org"
+  } else if(build==37) {
+    server="http://grch37.rest.ensembl.org"
+  }
+  ext = paste0("/overlap/region/human/", chr, ":", start, "-", end, "?feature=gene")
+  r = httr::GET(paste(server, ext, sep = ""), httr::content_type("application/json"))
+  httr::stop_for_status(r)
+  restr = jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
+  return(restr)
 }
 
 get_variant_context = function(chr, pos, a1, a2, build=38) {
@@ -229,7 +255,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
     gene = paste(unlist(restr$external_name), collapse=",")
     dist = 0
     assertthat::assert_that(!is.null(gene))
-    
+
   } else {
     # Case 2 and 3 start
     st = pos-1e6
@@ -264,7 +290,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       print(paste("minimum reached for gene", gene, "at", dist))
       assertthat::assert_that(!is.null(gene), !is.null(dist))
     }
-    
+
   }
 
 
@@ -294,33 +320,33 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
 #' @param signif Significance threshold (default: 5e-8)
 #' @param build Genome assembly number (38 or 37)
 #' @return A data.table with columns: plotpos, ploty, p, build
-get_peaks_to_annotate = function(manhattan_object, assoc, signif=5e-8, build=38) {
+get_peaks_to_annotate = function (manhattan_object, assoc, signif = 5e-8, build = 38){
   # expects an object from the mhp function
-  ret = NULL
-  retm = manhattan_object
-  sig = unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
+  ret=NULL
+  retm=manhattan_object
+  sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
   # print("GPTA : ")
   # print(retm$newcoords[retm$newcoords$y>-log10(signif),])
   if(length(sig>1)){
     for(xpos in sig){
-      dict_entry = retm$posdict[retm$posdict$coord==xpos,];
+      dict_entry=retm$posdict[retm$posdict$coord==xpos,];
       # print(paste("GPTA : for entry", xpos))
       # print(dict_entry)
-      mmin = unlist(dict_entry$min)[1];
-      mmax = unlist(dict_entry$max)[1];
-      chr_ref = unlist(dict_entry$chr)[1];
+      mmin=unlist(dict_entry$min)[1];
+      mmax=unlist(dict_entry$max)[1];
+      chr_ref=unlist(dict_entry$chr)[1];
       # assoc$chr=as.numeric(as.character(assoc$chr))
-      peakdata = assoc[(assoc$chr==chr_ref) & (assoc$pos>mmin) & (assoc$pos<mmax),];
+      peakdata=assoc[(assoc$chr==chr_ref) & (assoc$pos>mmin) & (assoc$pos<mmax),];
       # print("")
       # print(peakdata)
       # print("")
-      peakdata = peakdata[peakdata$p==min(peakdata$p),];
+      peakdata=peakdata[peakdata$p==min(peakdata$p),];
       # print("GPTA: extracted minimum")
       # print(peakdata)
-      peakdata = peakdata[1,];
-      peakdata$plotpos = xpos
-      peakdata$ploty = -log10(peakdata$p)
-      ret = rbind(ret,peakdata)
+      peakdata=peakdata[1,];
+      peakdata$plotpos=xpos
+      peakdata$ploty=-log10(peakdata$p)
+      ret=rbind(ret,peakdata)
     }
 
     ret = data.table::data.table(chr=ret$chr, ps=ret$pos, a1=ret$a1, a2=ret$a2, plotpos=ret$plotpos, ploty=ret$ploty,p=ret$p)
@@ -331,22 +357,24 @@ get_peaks_to_annotate = function(manhattan_object, assoc, signif=5e-8, build=38)
   }
 }
 
-
-plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8, MAX_NUM_PEAKS=30){
-
-  yl=ifelse(!is.null(annotation_object), args$upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
-
-  yl=ifelse(args$ylim>-1,args$ylim, yl)
+plot_manhattan = function(manhattan_object,
+                          annotation_object = NULL,
+                          signif = 5e-8,
+                          MAX_NUM_PEAKS = 30,
+                          upper_margin = 2.0,
+                          ylim = -1.0,
+                          annot_cex = 1.1,
+                          axes_cex = 1.3) {
+  yl=ifelse(!is.null(annotation_object), upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
+  yl=ifelse(ylim>-1, ylim, yl)
   print(max(manhattan_object$newcoords$y))
 
-
-
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y,
-       pch=20, col=as.character(manhattan_object$newcoords$col), xlab="",
-       axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="")
+    pch=20, col=as.character(manhattan_object$newcoords$col), xlab="",
+    axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="")
 
   axis(2, las=1, cex=1.5,at=seq(0, 2*(max(manhattan_object$newcoords$y)%/%2+1), by=2))
-  mtext(expression(paste("-log"[10], "(p)")), side=2, line=2.5, at=(max(manhattan_object$newcoords$y)%/%2+1), cex=args$axes_cex)
+  mtext(expression(paste("-log"[10], "(p)")), side=2, line=2.5, at=(max(manhattan_object$newcoords$y)%/%2+1), cex=axes_cex)
 
   if(!is.null(annotation_object)){
 
@@ -355,42 +383,41 @@ plot_manhattan = function(manhattan_object, annotation_object=NULL, signif=5e-8,
     # annotation_object=annotation_object[act=="a"]
 
     segments(x0=annotation_object$plotpos,
-             y0=annotation_object$ploty,
-             y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
+    y0=annotation_object$ploty,
+    y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
     espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
     labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),by=espacement/MAX_NUM_PEAKS)
 
-    labelpos=apply(annotation_object, 1, function(x) {
-      if(length(labelslots)==0) {
-        print("Error: too many peaks.")
-        return(x["plotpos"])
-      }
-      slotdist=abs(labelslots-as.numeric(x["plotpos"]))
-      idx=(1:length(slotdist))[slotdist==min(slotdist)]
-      # print(idx)
-      ret=labelslots[idx]
-      # print(ret)
-      # print(labelslots)
-      labelslots<<-labelslots[-idx]
-      # print(labelslots)
-      return(ret)
-    })
+      labelpos=apply(annotation_object, 1, function(x) {
+        if(length(labelslots)==0) {
+          print("Error: too many peaks.")
+          return(x["plotpos"])
+        }
+        slotdist=abs(labelslots-as.numeric(x["plotpos"]))
+        idx=(1:length(slotdist))[slotdist==min(slotdist)]
+        # print(idx)
+        ret=labelslots[idx]
+        # print(ret)
+        # print(labelslots)
+        labelslots<<-labelslots[-idx]
+        # print(labelslots)
+        return(ret)
+        })
 
-    segments(x0=annotation_object$plotpos,x1=labelpos,
-             y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
-             lty=2, lwd=2, col="lightgray")
-    text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
-         srt=45, cex=args$annot_cex, pos=4, font=4)
-    points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)),
-           pch=annotation_object$pch, col=annotation_object$col, font=2, cex=args$annot_cex)
+      segments(x0=annotation_object$plotpos,x1=labelpos,
+        y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
+        lty=2, lwd=2, col="lightgray")
+      text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
+        srt=45, cex=annot_cex, pos=4, font=4)
+      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)),
+        pch=annotation_object$pch, col=annotation_object$col, font=2, cex=annot_cex)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
-  # axis(2, las=1, cex=1.5)
+  # axis(2,las=1,cex=1.5)
   for (i in 1:22){
     pp=ifelse(i %% 2 == 0, 0, 1)
-    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=args$axes_cex)
+    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=axes_cex)
   }
-  mtext("Chromosome",1,at=1,cex=args$axes_cex,line=0)
+  mtext("Chromosome",1,at=1,cex=axes_cex,line=0)
 
 }
-
