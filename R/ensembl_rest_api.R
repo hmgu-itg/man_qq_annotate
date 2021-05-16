@@ -584,45 +584,30 @@ runEnsemblQuery=function(query,allow.tries=2) {
 # Uses the chr,pos,allele and strand information to get a VEP prediction for  #
 # a variation                                                                 #
 ###############################################################################
-getVepSnp=function(chr,pos,allele,strand,build="hg38",
-                   name=NULL,
-                   query="vep/human/region/%i:%i-%i:%i/%s?content-type=application/json",
-                   allow.tries=2) {
-  if( build == "hg38") {
+getVepSnp = function(chr, pos, allele, build=38,
+                   name = NULL,
+                   query = "vep/human/region/%i:%i-%i/%s?content-type=application/json",
+                   allow.tries = 2) {
+  allele=toupper(allele)
+  if( build == 38) {
     server="http://rest.ensembl.org"
-    } else if( build == "hg19") {
+    } else if( build == 37) {
       server="http://grch37.rest.ensembl.org"
+    } else {
+      print("ERROR: Invalid build supplied.")
     }
-
 
   if (is.null(name)==TRUE) {
     name=sprintf("%i:%i",chr,pos)
   }
-  vep_query=sprintf(query,chr,pos,pos,strand,allele)
-  full_query=paste(server,vep_query,sep="/")
+  vep_query=sprintf(query,chr,pos,pos,allele)
+  r=httr::GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
+  vep_data=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
 
-  vep_data=runEnsemblQuery(full_query,allow.tries=allow.tries)
-
-  snp_data=vep_data[[1]]
-  snp_cols=c("source","name","MAF","ambiguity","var_class","ancestral_allele","most_severe_consequence","location","assembly_name","seq_region_name","start","end","strand")
-
-  snp_data[["source"]]="VEP"
-  snp_data[["ambiguity"]]=NA
-  snp_data[["MAF"]]=NA
-  snp_data[["ancestral_allele"]]=NA
-  snp_data[["name"]]=name
-  snp_data[["var_class"]]="VEP"
-  snp_data[["location"]]=sprintf("%i:%i-%i",chr,pos,pos)
-
-  base_data=c()
-  for (c in snp_cols) {
-    sd=snp_data[[c]]
-    base_data=c(base_data,sd)
+  if(!("error" %in% names(vep_data))) {
+    return(vep_data)
   }
 
-  vep_dt=data.table(matrix(data=base_data,nrow=1,ncol=length(snp_cols),byrow=TRUE,dimnames=list(row=NULL,col=snp_cols)))
-
-  return(vep_dt)
 }
 
 

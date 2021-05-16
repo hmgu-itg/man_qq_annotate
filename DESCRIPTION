@@ -12,6 +12,8 @@ Suggests:
 Imports: 
     rjson,
     data.table,
+    assertthat,
+    R.utils,
     jsonlite,
     httr,
     zoo,
