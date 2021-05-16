@@ -600,9 +600,9 @@ getVepSnp=function(chr,pos,allele,strand,build="hg38",
   }
   vep_query=sprintf(query,chr,pos,pos,strand,allele)
   full_query=paste(server,vep_query,sep="/")
-#  print(full_query)
+
   vep_data=runEnsemblQuery(full_query,allow.tries=allow.tries)
-#  print(names(vep_data[[1]]))
+
   snp_data=vep_data[[1]]
   snp_cols=c("source","name","MAF","ambiguity","var_class","ancestral_allele","most_severe_consequence","location","assembly_name","seq_region_name","start","end","strand")
 
@@ -618,11 +618,10 @@ getVepSnp=function(chr,pos,allele,strand,build="hg38",
   for (c in snp_cols) {
     sd=snp_data[[c]]
     base_data=c(base_data,sd)
-#    print(paste(c,"=",sd))
   }
 
   vep_dt=data.table(matrix(data=base_data,nrow=1,ncol=length(snp_cols),byrow=TRUE,dimnames=list(row=NULL,col=snp_cols)))
-#  print(vep_dt)
+
   return(vep_dt)
 }
 
