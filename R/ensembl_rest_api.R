@@ -584,7 +584,10 @@ runEnsemblQuery=function(query,allow.tries=2) {
 # Uses the chr,pos,allele and strand information to get a VEP prediction for  #
 # a variation                                                                 #
 ###############################################################################
-getVepSnp = function(chr, pos, allele, build=38,
+getVepSnp=function(chr,
+                   pos,
+                   allele,
+                   build = 38,
                    name = NULL,
                    query = "vep/human/region/%i:%i-%i/%s?content-type=application/json",
                    allow.tries = 2) {
@@ -601,7 +604,7 @@ getVepSnp = function(chr, pos, allele, build=38,
     name=sprintf("%i:%i",chr,pos)
   }
   vep_query=sprintf(query,chr,pos,pos,allele)
-  r=httr::GET(paste(server, vep_query, sep = "/"), content_type("application/json"))
+  r=httr::GET(paste(server, vep_query, sep = "/"), httr::content_type("application/json"))
   vep_data=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
 
   if(!("error" %in% names(vep_data))) {
