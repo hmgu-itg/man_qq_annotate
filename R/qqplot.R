@@ -1,5 +1,5 @@
 
-manqq.qqplot = function(outfile, data, pvalue, signif = 5e-8, build = 38, image.type = 'png') {
+manqq.qqplot = function(outfile, pvalue, signif = 5e-8, build = 38, image.type = 'png') {
   ret = qqplot(pvalue)
 
   nn = length(pvalue)
