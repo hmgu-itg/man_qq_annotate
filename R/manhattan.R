@@ -303,7 +303,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
         # TODO: Find an example and ask Arthur how to handle this case.
         warning("problem: both alleles have consequences")
         print(cons)
-        print(tobind)
+        print(topaste)
       }
       cons = topaste$most_severe_consequence[1]
     }
