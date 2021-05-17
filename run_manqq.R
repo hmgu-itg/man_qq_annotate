@@ -130,7 +130,6 @@ parser$add_argument("outfile", nargs=1, help="Output file name (with no file ext
 
 args=parser$parse_args()
 
-print(paste0('Running ManQQ version: ', packageVersion('manqq')))
 manqq::run_manqq(
     infile = args$infile,
     outfile = args$outfile,
@@ -140,4 +139,18 @@ manqq::run_manqq(
     a2 = args$a2,
     pval = args$pval_col,
     af = args$af_col,
+    maf= args$maf,
+    signif = args$sig,
+    maxpeaks = args$maxpeaks,
+    no_qq = args$no_qq,
+    no_man = args$no_man,
+    no_annot = args$no_annot,
+    no_distance = args$no_distance,
+    man_height = args$man_height,
+    upper_margin = args$upper_margin,
+    annot_cex = args$annot_cex,
+    axes_cex = args$axes_cex,
+    ylim = args$ylim,
+    build = args$build,
+    image = args$image
 )
