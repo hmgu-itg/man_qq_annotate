@@ -5,7 +5,7 @@ From: thomaschln/r-devtools
   PATH=$PATH:/opt/man_qq_annotate
 
 %post
-  apt install -y git
+  apt install -y git libxtst6
   cd /opt
   git clone https://github.com/hmgu-itg/man_qq_annotate.git -b package
   cd man_qq_annotate
