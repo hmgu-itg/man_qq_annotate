@@ -102,4 +102,5 @@ You can use `devtools` to load all the functions into your environment for devel
 library(devtools)
 setwd('/base/of/the/repo/man_qq_annotate')
 load_all()
+test() # Use testthat's test function to run the testsuite
 ```
