@@ -9,6 +9,7 @@ Description: Creates Manhattan and QQ plots with annotated
     dataset to what the eye can see.
 Encoding: UTF-8
 Suggests: 
+    testthat (>= 3.0.0)
 Imports: 
     rjson,
     data.table,
@@ -19,3 +20,4 @@ Imports:
     zoo,
     argparse
 RoxygenNote: 7.1.1
+Config/testthat/edition: 3

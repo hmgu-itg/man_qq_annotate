@@ -236,6 +236,16 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   return(restr)
 }
 
+process_overlap_restr = function(restr) {
+  prot_genes = restr[restr$biotype=="protein_coding",]
+  if (is.null(prot_genes$external_name)){
+    gene_names = prot_genes$id
+  } else {
+    gene_names = prot_genes$external_name
+  }
+  return (paste(gene_names, collapse = ','))
+}
+
 get_variant_context = function(chr, pos, a1, a2, build=38) {
   print(paste("getting context for ", chr, ":", pos, a1, a2))
   alleles = c(a1, a2)
@@ -251,8 +261,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
     # Case 1
     print("overlap yes")
     ## we are sure from the above test that there is at least 1 prot coding gene
-    restr = restr[restr$biotype=="protein_coding",]
-    gene = paste(unlist(restr$external_name), collapse=",")
+    gene = process_overlap_restr(restr)
     dist = 0
     assertthat::assert_that(!is.null(gene))
 
