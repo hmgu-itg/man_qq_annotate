@@ -308,7 +308,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       return(c("none", 0, "intergenic_variant"))
     } else {
       # Case 2
-      output = process_case2_restr(restr)
+      output = process_case2_restr(restr, pos)
       gene = output$gene
       dist = output$dist
     }
