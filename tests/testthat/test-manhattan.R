@@ -61,3 +61,37 @@ test_that("query_ensembl_gene_overlap", {
   expect_s3_class(restr, "data.frame")
   expect_equal(nrow(restr), 1)
 })
+
+
+test_that("process_case2_restr", {
+  ## Case 1
+  # Variant at position 300. Closest gene 'AAA' 100bp away 
+  pos = 300
+  restr = data.frame(
+    biotype = c('protein_coding', 'protein_coding', 'protein_coding'),
+    start = c(100, 500, 1000),
+    end = c(200, 600, 3000),
+    external_name = c('AAA', 'BBB', 'CCC')
+  )
+  output = process_case2_restr(restr, pos)
+
+  expect_equal(output$dist, 100)
+  expect_equal(output$gene, 'AAA')
+
+
+  ## Case 2
+  # Variant at position 300. Closest gene is 100bp away but has no external name.
+  # Next closest named gene is BBB which is 200bp away. Take that. 
+  pos = 300
+  restr = data.frame(
+    biotype = c('protein_coding', 'protein_coding', 'protein_coding'),
+    start = c(100, 500, 1000),
+    end = c(200, 600, 3000),
+    external_name = I(list(NULL, 'BBB', 'CCC'))
+  )
+  restr[, ]
+  output = process_case2_restr(restr, pos)
+
+  expect_equal(output$dist, 200)
+  expect_equal(output$gene, 'BBB')
+})

@@ -220,6 +220,7 @@ mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
 #' @param start Start genomic position
 #' @param end End genomic position
 #' @param build The assembly to query
+#' @return data.frame with query results. Empty data.frame returned if no overlap
 #' @examples
 #' query_ensembl_gene_overlap(9, 5073770, 5073770)
 #' query_ensembl_gene_overlap(9, 4973770, 5173770)
@@ -248,6 +249,33 @@ process_overlap_restr = function(restr) {
     gene_names = prot_genes$external_name
   }
   return (paste(gene_names, collapse = ','))
+}
+
+process_case2_restr = function(restr, pos) {
+  restr = restr[restr$biotype=="protein_coding",]
+  print("overlap no, distance")
+
+  restr$dist1 = abs(unlist(restr$start)-pos)
+  restr$dist2 = abs(unlist(restr$end)-pos)
+
+  restr$dist = pmin(restr$dist1, restr$dist2)
+
+  reordered_restr = restr[order(restr$dist), ]
+  print(reordered_restr)
+  for (i in 1:nrow(reordered_restr)) {
+    gene = unlist(reordered_restr[i, 'external_name'])
+    dist = reordered_restr[i, 'dist']
+    if (is.null(gene)) {
+      print('[INFO] Skipping gene with no external_name')
+      print(reordered_restr[i,])
+      next
+    }
+    break
+  }
+  print(paste("minimum reached for gene", gene, "at", dist))
+  assertthat::assert_that(!is.null(gene), !is.null(dist))
+  print(dist)
+  return(list(gene = gene, dist = dist))
 }
 
 get_variant_context = function(chr, pos, a1, a2, build=38) {
@@ -280,28 +308,9 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       return(c("none", 0, "intergenic_variant"))
     } else {
       # Case 2
-      restr = restr[restr$biotype=="protein_coding",]
-      print("overlap no, distance")
-
-      restr$dist1 = abs(unlist(restr$start)-pos)
-      restr$dist2 = abs(unlist(restr$end)-pos)
-
-      restr$dist = pmin(restr$dist1, restr$dist2)
-
-      reordered_restr = restr[order(restr$dist), ]
-
-      for (i in nrow(reordered_restr)) {
-        gene = reordered_restr[i, 'external_name']
-        if (is.null(gene)) {
-          print('[INFO] Skipping gene with no external_name')
-          print(reordered_restr[i,])
-          next
-        }
-        dist = reordered_restr[i, 'dist']
-        break
-      }
-      print(paste("minimum reached for gene", gene, "at", dist))
-      assertthat::assert_that(!is.null(gene), !is.null(dist))
+      output = process_case2_restr(restr)
+      gene = output$gene
+      dist = output$dist
     }
 
   }
