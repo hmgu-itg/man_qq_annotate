@@ -1,6 +1,6 @@
 # Tests for functions in the manhattan.R script
 
-test_that("_process_overlap_restr", {
+test_that("process_overlap_restr", {
   ## Case 1
   # One protein coding gene overlap
   one_external_name = data.frame(
@@ -44,4 +44,20 @@ test_that("_process_overlap_restr", {
   gene_name = process_overlap_restr(no_external_name)
   expect_equal(gene_name, 'ENSG00000254469,ENSG00000300000')
 
+})
+
+
+test_that("query_ensembl_gene_overlap", {
+  ## Case 1
+  # There's no gene at position chr1:1, so we expect an empty data.frame
+  restr = query_ensembl_gene_overlap(1, 1, 1)
+
+  expect_s3_class(restr, "data.frame")
+  expect_equal(nrow(restr), 0)
+
+  ## Case 2
+  # The position overlaps the famous NODAL gene.
+  restr = query_ensembl_gene_overlap(10, 70431936, 70431937)
+  expect_s3_class(restr, "data.frame")
+  expect_equal(nrow(restr), 1)
 })

@@ -233,6 +233,10 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   r = httr::GET(paste(server, ext, sep = ""), httr::content_type("application/json"))
   httr::stop_for_status(r)
   restr = jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
+
+  if (!is.data.frame(restr) && is.list(restr) && length(restr)==0) {
+    return(data.frame())
+  }
   return(restr)
 }
 
