@@ -261,6 +261,15 @@ process_case2_restr = function(restr, pos) {
   restr$dist = pmin(restr$dist1, restr$dist2)
 
   reordered_restr = restr[order(restr$dist), ]
+
+  if (is.null(unlist(reordered_restr$external_name))) {
+    # None of the protein coding genes have an external_name (they are all NULL).
+    # Get the closest gene's Ensembl Stable ID instead.
+    # (This case is probably because the region only has novel protein coding genes)
+    gene = reordered_restr$gene_id[[1]]
+    dist = reordered_restr$dist[[1]]
+    return(list(gene = gene, dist = dist))
+  }
   print(reordered_restr)
   for (i in 1:nrow(reordered_restr)) {
     gene = unlist(reordered_restr[i, 'external_name'])

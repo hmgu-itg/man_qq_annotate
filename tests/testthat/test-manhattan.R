@@ -89,9 +89,27 @@ test_that("process_case2_restr", {
     end = c(200, 600, 3000),
     external_name = I(list(NULL, 'BBB', 'CCC'))
   )
-  restr[, ]
   output = process_case2_restr(restr, pos)
 
   expect_equal(output$dist, 200)
   expect_equal(output$gene, 'BBB')
+
+
+  ## Case 3
+  # Protein coding genes present, but none of them with external name. 
+  # Take the closest gene's Ensembl Stable ID instead.
+  # (This case is probably because the region only has novel protein coding genes)
+  # Example: restr = query_ensembl_gene_overlap(13, 62082341, 64082341, 38)
+  pos = 300
+  restr = data.frame(
+    biotype = c('protein_coding', 'protein_coding', 'protein_coding'),
+    start = c(100, 500, 1000),
+    end = c(200, 600, 3000),
+    external_name = I(list(NULL, NULL, NULL)),
+    gene_id = c("ENSG001", "ENSG002", "ENSG003")
+  )
+  output = process_case2_restr(restr, pos)
+
+  expect_equal(output$dist, 100)
+  expect_equal(output$gene, "ENSG001")
 })
