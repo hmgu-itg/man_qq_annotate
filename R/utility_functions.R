@@ -2,7 +2,7 @@
 # General R utility functions to perform simple "checking" tasks that you     #
 # might find common in R scripts                                              #
 ###############################################################################
-suppressPackageStartupMessages(library(data.table))
+
 
 
 

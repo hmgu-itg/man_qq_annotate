@@ -1,19 +1,27 @@
 # man_qq_annotate
 Creates Manhattan and QQ plots with annotated peaks for sequencing-based GWAS outputs, by thinning the dataset to what the eye can see.
 
-## Prerequisites
-This package needs R along with the libraries `argparse`, `zoo`, `data.table`.
-
 ## Installation
-`git clone` the repo, then optionally modify the shebang (1st, starting with `#!`) line of `run_manqq.R` to point it to your local R installation. If you do do this, don't forget to `chmod +x` it.
+Clone the repository and install using `devtools`
+```bash
+git clone https://github.com/hmgu-itg/man_qq_annotate.git
+cd man_qq_annotate
 
-## Example :
+# Install devtools if you don't have it
+# R -e 'install.packages('devtools')
+R -e 'library(devtools) ; install()'
+```
+## Usage
+You can either use the CLI or load the package into your R environment.
+
+### Command Line Interface (CLI)
+Once installed, you can use the `run_manqq.R` script in the base of the repository as a command line tool.  
 For a GCTA output, use the following:
 ```
 ./run_manqq.R --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
 ```
 
-The default column names are configured for a GEMMA output file. Input files can be gzipped or plain. Run without arguments for a list of options, run with `--help` for detailed options:
+Input files can be gzipped or plain. Run without arguments for a list of options, run with `--help` for detailed options:
 
 ```bash
 usage: ./run_manqq.R [-h] [--chr-col [character]] [--pval-col [character]]
@@ -70,4 +78,29 @@ optional arguments:
   --axes-cex [double]   Size factor for axes and labels.
   --ylim [double]       The y-axis limit (-log10(p))
 
+```
+
+
+### Loading the package
+You can load the package into your R environment and use the available functions.
+```R
+library(manqq)
+ls('package:manqq')
+```
+```
+[1] "run_manqq"      "run_manqq.gcta"
+```
+
+Currently, only two functions are exported and available for users. The other functions are all hidden and only used internally within the package. If there are any particular functionality you wish to use from the package, please make a request in the [issue page](https://github.com/hmgu-itg/man_qq_annotate/issues).
+
+
+
+
+## Development
+You can use `devtools` to load all the functions into your environment for development/debugging:
+```R
+library(devtools)
+setwd('/base/of/the/repo/man_qq_annotate')
+load_all()
+test() # Use testthat's test function to run the testsuite
 ```

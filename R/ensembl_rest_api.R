@@ -1,6 +1,6 @@
 # All the rest API calls are done via rjson
 # TOOD: class/type checking within functions
-suppressPackageStartupMessages(library(rjson))
+
 
 # These are for "Pretty" Population Names rather than the horrible ones that are returned by ensembl
 longpop=c(
@@ -120,7 +120,7 @@ shortpop=c(
   "NHLBI-ESP:ESP_POP",
   "BUSHMAN:POP2"
 )
-poptranslate=data.table(pop=longpop,shortpop=shortpop)
+# poptranslate=data.table(pop=longpop,shortpop=shortpop)
 
 ###############################################################################
 # return.maf = Return minor alleles and frequencies rather than everything    #
@@ -150,7 +150,7 @@ getPopAF=function(s,
   variation_query=sprintf(query,s)
   variation_query=paste(server,variation_query,sep="/")
   snpdata=fromJSON(file=variation_query)
-  
+
   # Check that there is population data for the SNP, if not return NULL
   # and generate a warning
   if (length(snpdata$population)==0) {
@@ -170,7 +170,7 @@ getPopAF=function(s,
   for (i in snpdata$population) {
     # Not sure why I put this in here, I think it is just flattening everything out
     i=unlist(i)
-    
+
     # Search for the population in the list of populations that has been passed
     # also search in the short names, if nether match then move on to the next one
 #    if (s=="rs4520") {
@@ -182,24 +182,24 @@ getPopAF=function(s,
 #      print(i['population'] %in% pop)
 #      print(poptranslate[pop==i['population'],shortpop] %in% pop)
 #    }
-    
+
     if (is.null(pop)==FALSE && i['population'] %in% pop==FALSE && (length(poptranslate[pop==i['population'],shortpop]) == 0 || (length(poptranslate[pop==i['population'],shortpop]) > 0 && poptranslate[pop==i['population'],shortpop] %in% pop==FALSE))) {
       next
     }
-    
+
 #    if (is.null(pop)==FALSE && i['population'] %in% pop==FALSE ) {
 #      print("IN HERE")
 #      next
 #    }
-    
+
     # Check to see if our population exists in the population translation table
     # if it doesn't then warn about it and add it so things do not fail below
     if (length(poptranslate[pop==i['population'],shortpop])==0L) {
       warning(paste("[WARNING] No short population name for",i['population'],"consider adding to the code"))
       poptranslate=rbindlist(list(poptranslate,data.table(i['population'],i['population'])) )
     }
-    
-    # Add the relevent details to a data.table that holds all of the 
+
+    # Add the relevent details to a data.table that holds all of the
     # population data
     popdata=rbindlist(list(popdata,data.table(pop=i['population'],
                                               shortpop=poptranslate[pop==i['population'],shortpop],
@@ -219,17 +219,17 @@ getPopAF=function(s,
   }
 #  if (s=="rs113216365") {
 #    print("GOT HERE")
-#    print(popdata) 
+#    print(popdata)
 #  }
-#  
-  
-  # Generate allele counts for each population/submission_id. The grouping 
+#
+
+  # Generate allele counts for each population/submission_id. The grouping
   # is by this as populations are not unique but pop/subid is unique.
-  # I am doing this to count how many alleles are represented, this is 
+  # I am doing this to count how many alleles are represented, this is
   # because monomorphic SNPs only have one allele in the data returned by
   # the rest API, we want to to have both represented
   # *** NOT SURE WHAT THE SUB ID IS AS IT IS ALLWAYS NA ***
-  # EDIT 17/11/14: It seems to be a ss SNP name, it only seems to be populated 
+  # EDIT 17/11/14: It seems to be a ss SNP name, it only seems to be populated
   # in non 1kg pops or in 1kg pre phase 1, So I will make all NA subid values
   # to be an empty string so when I subset and count later on I do not get unexpected
   # things happening
@@ -258,24 +258,24 @@ getPopAF=function(s,
   missing_alleles=data.table()
 #if (s=="rs113216365") {
 #  print("GOT HERE 2")
-#  print(missing_alleles) 
+#  print(missing_alleles)
 #}
 
-  # If there are missing alleles then generate the missing allele with 
+  # If there are missing alleles then generate the missing allele with
   # frequeny of 0
   if (nrow(mono) > 0) {
     # Loop through all the monomorphic SNPs
     for (j in 1:nrow(mono)) {
 
-      
-      # Find the allele strings that are missing 
+
+      # Find the allele strings that are missing
       missing=alleles[!(alleles %in% mono[j,allele])]
 #      if (s=="rs181637183") {
 #        print(mono[j,])
 #        print(missing)
 #      }
-      
-      # Loop through all the missing allele strings and 
+
+      # Loop through all the missing allele strings and
       # generate a record for each one
       for (k in missing) {
 #        print(data.table(mono[j,list(pop,shortpop,subid,snp,1-freq)],0,k,"A0",0))
@@ -300,7 +300,7 @@ getPopAF=function(s,
 #  print(popdata)
 #if (s=="rs113216365") {
 #  print("GOT HERE 3")
-#  print(popdata) 
+#  print(popdata)
 #}
   # Now we need to create an allele label column, i.e. A1 or A2
   # I will use the allele string to determine which allele should be
@@ -312,31 +312,31 @@ getPopAF=function(s,
 #   # Do we want to subset some populations
 #   if (is.null(args$pop)==FALSE) {
 #     poprows=c()
-#      
-#     # Loop through all the populations and grep the 
+#
+#     # Loop through all the populations and grep the
 #     # row numbers that match
 #     #    print(args[['pop']])
 #     for (p in args[['pop']]) {
 #       matches=grep(p,popdata$pop)
-#        
+#
 #       # Warn if we can't find any matches
 #       if (length(matches)==0) {
 #         warning(paste("[WARNING] Population ",p," can't be found") )
 #       }
-#        
+#
 #       # Store the matching row numbers and subset all at the end
 #       poprows=c(poprows,matches)
 #     }
-#      
+#
 #    # If none of the populations matched then this is a FATAL error
 #    if (length(poprows)==0) {
 #      stop("[FATAL] All Populations can't be found")
 #    }
-#    
+#
 #    # Finally subset all the matching rows
 #    popdata=popdata[unique(poprows),]
 #  }
-  
+
   setkey(popdata,pop,alleno)
 
 #  if (return.maf==TRUE) {
@@ -355,7 +355,7 @@ getPopAF=function(s,
 getGeneStructure=function(gene_id,
                           build="hg38",
                           query="lookup/id/%s?content-type=application/json;expand=1") {
-  
+
   if( build == "hg38") {
     server="http://rest.ensembl.org"
     } else if( build == "hg19") {
@@ -364,7 +364,7 @@ getGeneStructure=function(gene_id,
 
   # The columns in all the raw data that should be integers
   numeric_columns=c("start","end","strand")
-  
+
   gene_query=sprintf(query,gene_id)
   full_query=paste(server,gene_query,sep="/")
 #  gene_data=fromJSON(file=full_query)
@@ -398,23 +398,23 @@ getGeneStructure=function(gene_id,
   protein_data=data.table()
   exon_data=data.table()
   # This loops through all the transcripts for the gene
-  for (i in gene_data[['Transcript']]) {                      
+  for (i in gene_data[['Transcript']]) {
     # This will hold the data for the transcript, the first element of the
     # vector will be the gene name as this will be used to merge to the gene
     # data at the end
     transcript_info=c(gene_info[1])
-    
+
     # Loop through all the fields and get the data for each one
     for (tc in transcript_components) {
       transcript_info=c(transcript_info,i[[tc]])
     }
-    
+
     # Some transcripts will be protein coding so we want to capture the
     # translation details as we can use these to determine UTR regions. The
     # first bit of info we store will be the transcript id
     protein_info=c(transcript_info[2])
-    
-    # If the transcript is protein coding then get the details for the 
+
+    # If the transcript is protein coding then get the details for the
     # protein. Otherwise will will insert NA values
     if (is.null(i[['Translation']])==FALSE) {
       # Loop through the translation
@@ -424,31 +424,31 @@ getGeneStructure=function(gene_id,
     } else {
       protein_info=c(protein_info,rep(NA,4))
     }
-    
-    # Store the protein data 
+
+    # Store the protein data
     protein_data=rbindlist(list(protein_data,as.list(protein_info)))
-  
+
     # Store the transcript data
     transcript_data=rbindlist(list(transcript_data,
                                    as.list(transcript_info)
                                    ))
-    
+
     # Now grab the exon data for the gene
     for (e in i[['Exon']]) {
       exon_info=c(transcript_info[2])
       for (ec in exon_components) {
         exon_info=c(exon_info,e[[ec]])
       }
-      
+
       # Bind to the exon data
       exon_data=rbindlist(list(exon_data,as.list(exon_info)))
     }
   } # end of looping through the transcripts
-  
+
   gene_components=paste("gene",gene_components,sep="_")
   protein_components=paste("prot",protein_components,sep="_")
   transcript_components=paste("trans",transcript_components,sep="_")
-  exon_components=paste("exon",exon_components,sep="_")  
+  exon_components=paste("exon",exon_components,sep="_")
 
   setnames(protein_data,c("trans_id",protein_components))
   setnames(transcript_data,c("gene_id",transcript_components))
@@ -463,17 +463,17 @@ getGeneStructure=function(gene_id,
   # Make the gene_data into a data.table and set the names
   gene_data=rbindlist(list(as.list(gene_info)))
   setnames(gene_data,gene_components)
-  
+
   # Now merge the whole lot into the gene
   gene_data=merge(x=gene_data,y=transcript_data,by="gene_id")
-  
+
   # Now I want to make sure that all the correct integer columns
   # are case to integers from characters
   cast_cols=c(paste("exon",numeric_columns,sep="_"),
               paste("gene",numeric_columns,sep="_"),
               paste("trans",numeric_columns,sep="_"),
               paste("prot",numeric_columns,sep="_") )
-  
+
   return(castCols(gene_data,cast_cols,type="integer"))
 }
 
@@ -484,7 +484,7 @@ getGeneStructure=function(gene_id,
 getOverlaps=function(gene_id,
                      server="h38",
                      query="overlap/id/%s?feature=gene;feature=transcript;feature=exon;content-type=application/json") {
-    
+
     if( build == "hg38") {
     server="http://rest.ensembl.org"
     } else if( build == "hg19") {
@@ -496,15 +496,15 @@ getOverlaps=function(gene_id,
   #  print(full_query)
   gene_data=fromJSON(file=full_query)
   #  print(gene_data)
-  
-  # Create some data.tables to hold the 
+
+  # Create some data.tables to hold the
   # gene data
   # transcript data
   # exon data
   genes=data.table()
   transcripts=data.table()
   exons=data.table()
-  
+
   for (n in 1:length(gene_data)) {
     #    print("================================================================")
     # Feature data
@@ -512,7 +512,7 @@ getOverlaps=function(gene_id,
     #    print(fd)
     #    print(fd$feature_type)
     #    print(fd)
-    
+
     if (fd$feature_type=="gene") {
       genes=rbindlist( list(genes,data.table("-",fd$id,fd$seq_region_name,fd$start,fd$end,fd$strand) ) )
     } else if (fd$feature_type=="transcript") {
@@ -523,17 +523,17 @@ getOverlaps=function(gene_id,
     #    print(fd)
   }
   #  print(genes)
-  
+
   setnames(genes,c("parent_id","ens_gene_id","gene_chr","gene_start","gene_end","gene_strand"))
   setkey(genes,"ens_gene_id")
-  
+
   setnames(transcripts,c("ens_gene_id","ens_trans_id","trans_chr","trans_start","trans_end","trans_strand"))
   setkey(transcripts,"ens_gene_id")
-  
+
   genes=merge(genes,transcripts,by="ens_gene_id")
   setnames(exons,c("ens_trans_id","ens_exon_id","rank","exon_chr","exon_start","exon_end","exon_strand"))
   setkey(exons,"ens_trans_id")
-  
+
   genes=merge(genes,exons,by="ens_trans_id")
   genes=genes[ens_gene_id==gene_id,]
   #  print(exons)
@@ -584,46 +584,33 @@ runEnsemblQuery=function(query,allow.tries=2) {
 # Uses the chr,pos,allele and strand information to get a VEP prediction for  #
 # a variation                                                                 #
 ###############################################################################
-getVepSnp=function(chr,pos,allele,strand,build="hg38",
-                   name=NULL,
-                   query="vep/human/region/%i:%i-%i:%i/%s?content-type=application/json",
-                   allow.tries=2) {
-  if( build == "hg38") {
+getVepSnp=function(chr,
+                   pos,
+                   allele,
+                   build = 38,
+                   name = NULL,
+                   query = "vep/human/region/%i:%i-%i/%s?content-type=application/json",
+                   allow.tries = 2) {
+  allele=toupper(allele)
+  if( build == 38) {
     server="http://rest.ensembl.org"
-    } else if( build == "hg19") {
+    } else if( build == 37) {
       server="http://grch37.rest.ensembl.org"
-    }  
-
+    } else {
+      print("ERROR: Invalid build supplied.")
+    }
 
   if (is.null(name)==TRUE) {
     name=sprintf("%i:%i",chr,pos)
   }
-  vep_query=sprintf(query,chr,pos,pos,strand,allele)
-  full_query=paste(server,vep_query,sep="/")
-#  print(full_query)
-  vep_data=runEnsemblQuery(full_query,allow.tries=allow.tries)
-#  print(names(vep_data[[1]]))
-  snp_data=vep_data[[1]]
-  snp_cols=c("source","name","MAF","ambiguity","var_class","ancestral_allele","most_severe_consequence","location","assembly_name","seq_region_name","start","end","strand")
-  
-  snp_data[["source"]]="VEP"
-  snp_data[["ambiguity"]]=NA
-  snp_data[["MAF"]]=NA
-  snp_data[["ancestral_allele"]]=NA
-  snp_data[["name"]]=name
-  snp_data[["var_class"]]="VEP"
-  snp_data[["location"]]=sprintf("%i:%i-%i",chr,pos,pos)
-  
-  base_data=c()
-  for (c in snp_cols) {
-    sd=snp_data[[c]]
-    base_data=c(base_data,sd)
-#    print(paste(c,"=",sd))
+  vep_query=sprintf(query,chr,pos,pos,allele)
+  r=httr::GET(paste(server, vep_query, sep = "/"), httr::content_type("application/json"))
+  vep_data=jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
+
+  if(!("error" %in% names(vep_data))) {
+    return(vep_data)
   }
 
-  vep_dt=data.table(matrix(data=base_data,nrow=1,ncol=length(snp_cols),byrow=TRUE,dimnames=list(row=NULL,col=snp_cols)))
-#  print(vep_dt)
-  return(vep_dt)
 }
 
 
@@ -634,7 +621,7 @@ getSnps=function(snpid,
                  build="hg38",
                  query="variation/human/%s?content-type=application/json",
                  allow.tries=2) {
-  
+
     if( build == "hg38") {
     server="http://rest.ensembl.org"
     } else if( build == "hg19") {
@@ -650,7 +637,7 @@ getSnps=function(snpid,
   snp_data=runEnsemblQuery(full_query,allow.tries=allow.tries)
 #  print(snp_data)
   if (is.null(snp_data)==TRUE) {
-    return(snp_data)   
+    return(snp_data)
   }
 #  print(names(snp_data))
   #"synonyms","evidence"
@@ -665,8 +652,8 @@ getSnps=function(snpid,
     base_data=c(base_data,sd)
 #    base_data=c(base_data,snp_data[[c]])
   }
-  
-  
+
+
   mapping_cols=c("location","assembly_name","seq_region_name","start","end","strand")
   # Now loop through all the mappings adding the location information
   for (m in snp_data$mappings) {
@@ -686,7 +673,7 @@ getSnps=function(snpid,
     all_snp_data=rbindlist(list(all_snp_data,as.list(c(base_data,mapping_data))))
   }
 
-  
+
 #  print(c(snp_cols,mapping_cols))
   setnames(all_snp_data,names(all_snp_data),c(snp_cols,mapping_cols))
   all_snp_data[,most_severe_consequence := gsub("\\s+","_", tolower(most_severe_consequence)) ]
@@ -704,16 +691,16 @@ assignSnpPriority = function(variations,so_terms) {
 #  setkey(so_term,"so_term")
 #  print(names(variations))
 #  print(names(so_terms))
-  
+
   # Re-name the so_term column name to most_severe_consequence
   setnames(so_terms,"so_term","most_severe_consequence")
   so_terms=so_terms[,list(most_severe_consequence,priority)]
-  
+
   setkey(so_terms,"most_severe_consequence")
   setkey(variations,"most_severe_consequence")
-  
+
   variations=merge(variations,so_terms,all.x=TRUE)
-  
+
   # Anything that we don't know about gets the lowest priority
   variations[is.null(priority)==TRUE,priority:=max(so_terms[,priority])+1]
   return(variations)
@@ -730,7 +717,7 @@ getGenesOverlapRegion = function(chr,
                                  species="human",
                                  query="overlap/region/%s/%s:%i-%i?feature=gene;content-type=application/json",
                                  allow.tries=2) {
-  
+
   if( build == "hg38") {
     server="http://rest.ensembl.org"
     } else if( build == "hg19") {
@@ -751,9 +738,9 @@ getGenesOverlapRegion = function(chr,
   region_data=runEnsemblQuery(full_query,allow.tries=allow.tries)
   #  print(snp_data)
   if (is.null(region_data)==TRUE) {
-    return(region_data)   
+    return(region_data)
   }
-  
+
   # Expcols
   gene_cols=c("source",
               "logic_name",
@@ -768,32 +755,32 @@ getGenesOverlapRegion = function(chr,
               "seq_region_name",
               "strand",
               "id")
-  
+
   all_gene_data=data.table()
-  
+
   # If we get here then we have some data
   for (i in region_data) {
 #    print(names(i))
-    # To hold the data for the current gene   
+    # To hold the data for the current gene
     gene_data=c()
-    
+
     # Loop through all the columns that we expect
     for (n in gene_cols ) {
       # If there is no data for that column then make it NA
       if (is.null(i[[n]])==TRUE) {
         i[[n]]=NA
       }
-      
+
       # Add to the data vector
       gene_data=c(gene_data,i[[n]])
     }
-    
+
     # Finally when we have built the data.vector add it to the total
     # list of genes we have in the region
     all_gene_data=rbindlist(list(all_gene_data,as.list(gene_data)))
 
   }
-  
+
   if (nrow(all_gene_data)>0) {
     # Add some column names fot the gene data and return
     setnames(all_gene_data,names(all_gene_data),gene_cols)
@@ -829,20 +816,20 @@ getNearestGene = function(chr,
   #  print(chr)
   #  print(pos)
   # The is the maximum flank test size to look for genes
-  # if it is beyond this and no genes have been found then 
+  # if it is beyond this and no genes have been found then
   # we will return NULL and a warning
   max.test.size=2000000
-  
+
   # Will hold the genes nearest the genomic position
   genes=data.table()
-  
+
   repeat {
     startpos=max(c(1,pos-test.flank.bp))
     endpos=pos+test.flank.bp
     # print(sprintf("[INFO] Searching %i:%i-%i",chr,startpos,endpos))
     # print(startpos)
     # print(endpos)
-    
+
     # Get the genes overlapping the defined region
     genes=getGenesOverlapRegion(chr,
                                 startpos,
@@ -858,44 +845,44 @@ getNearestGene = function(chr,
     # If we have some genes, then find out which one is closest. If threre
     # is only one gene then by definition it must be the closest
     if (nrow(genes)>0) {
-      # Calculate the distances between our genomic position and the start and 
+      # Calculate the distances between our genomic position and the start and
       # end of each gene
       genes[,enddist:=abs(pos-as.numeric(end))]
       genes[,startdist:=abs(pos-as.numeric(start))]
-      
-      # Now make sure the genomic position is not in the gene in which case 
+
+      # Now make sure the genomic position is not in the gene in which case
       # I will set the distance to -1
       genes[pos<=as.numeric(end) & pos>=as.numeric(start),enddist:=-1]
       genes[pos<=as.numeric(end) & pos>=as.numeric(start),startdist:=-1]
-      
+
       # Calculate the lowest distance between the start and end distance
       genes[,mindist:=min(.SD[,]),.SDcols=c("startdist","enddist"),by=id]
-      
+
       # Now get the gene with the overall minimum distance
       genes=genes[which.min(mindist),]
     }
-    
-    # See if we need to exit the loop, Keep on testing while we have no genes 
+
+    # See if we need to exit the loop, Keep on testing while we have no genes
     # and are below our max test size
     if (test.flank.bp >= max.test.size || nrow(genes)>0) {
       break
     }
-    
+
     # If we get to here we will test a wider flank
     test.flank.bp=test.flank.bp+test.flank.inc
   }
-  
+
   # Issue a warning if we have 0 genes
   if (nrow(genes)==0) {
     biostr=""
     if (length(biotypes)>0) {
       biostr=sprintf(" with biotypes: %s",paste(biotypes,collapse=","))
     }
-    
+
     warning(sprintf("[WARNING] There are 0 genes in the region %i:%i-%i %s",chr,startpos,endpos,biostr))
 #    print(genes)
   }
-  
+
   if (nrow(genes)>0) {
     genes[,search_chr:=chr]
     genes[,search_pos:=pos]
