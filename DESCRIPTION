@@ -1,5 +1,5 @@
 Package: manqq
-Version: 0.2.1
+Version: 0.2.2
 Authors@R:
     person("Arthur", "Gilly", email = "arthur.gilly@helmholtz-muenchen.de", role = c("aut", "cre"))
     person("Andrei", "Barysenka", email = "andrei.barysenka@helmholtz-muenchen.de", role = c("cre"))
