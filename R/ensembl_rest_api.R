@@ -609,6 +609,9 @@ getVepSnp=function(chr,
 
   if(!("error" %in% names(vep_data))) {
     return(vep_data)
+  } else {
+    arguments = paste0('Arguments: ', chr, ', ', pos, ', ', allele, ', ', build)
+    stop(paste(arguments, '\n', vep_data$error))
   }
 
 }
