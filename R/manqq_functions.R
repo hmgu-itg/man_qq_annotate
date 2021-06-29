@@ -72,11 +72,17 @@ run_manqq = function(infile,
   # MAF filter data
   data = maf.filter(data, maf)
   # Exclude variants with p value NA or 0
-  data = data[!(is.na(p)) & p!=0]
+  data = refine_data(data)
   # Make QQ-Plot 
   if (!no_qq) manqq.qqplot(outfile, data[, p], image.type)
   # Make Manhattan Plot
   if (!no_man) manqq.manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
+}
+
+refine_data = function(data) {
+  data$p = as.numeric(data[, p])
+  data = data[!(is.na(p)) & p!=0]
+  return(data)
 }
 
 #' @export
