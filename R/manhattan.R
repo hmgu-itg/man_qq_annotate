@@ -56,6 +56,7 @@ manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30
     low = c("splice_region_variant", "incomplete_terminal_codon_variant", "stop_retained_variant", "synonymous_variant", "coding_sequence_variant")
     intronic = c("intron_variant")
     intergenic = c("intergenic_variant")
+    unknown = c('unknown')
     peaks$pch[peaks$consequence %in% lof]=4
     peaks$col[peaks$consequence %in% lof]="firebrick"
     peaks$pch[peaks$consequence %in% high]=17
@@ -68,6 +69,8 @@ manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30
     peaks$col[peaks$consequence %in% intronic]="brown"
     peaks$pch[peaks$consequence %in% intergenic]=19
     peaks$col[peaks$consequence %in% intergenic]="darkgray"
+    peaks$pch[peaks$consequence %in% unknown]=15
+    peaks$col[peaks$consequence %in% unknown]="magenta"
   }
 
   plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks)
@@ -328,7 +331,12 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
   # get consequence
   cons = NULL
   for(i in alleles) {
-    topaste=getVepSnp(chr=chr,pos=pos,allele=i,build=build)
+    topaste = tryCatch(getVepSnp(chr=chr, pos=pos, allele=i, build=build),
+        error = function(c) {
+          warning(c)
+          return(NULL)
+        }
+      )
     if(!is.null(topaste)){
       if(!is.null(cons)){
         # TODO: Find an example and ask Arthur how to handle this case.
@@ -339,6 +347,7 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
       cons = topaste$most_severe_consequence[1]
     }
   }
+  if (is.null(cons)) cons = 'unknown'
   assertthat::assert_that(!is.null(gene), !is.null(dist), !is.null(cons))
   return(c(gene, dist, cons))
 }
