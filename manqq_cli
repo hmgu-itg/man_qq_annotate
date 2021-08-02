@@ -4,7 +4,7 @@ suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(manqq))
 
 
-# run ./run_manqq.R --help or ./run_manqq -h to display help message
+# run ./manqq_cli --help or ./run_manqq -h to display help message
 
 # create parser object
 parser <- ArgumentParser(description="A program to plot Manhattan and QQ plots")
@@ -130,7 +130,7 @@ parser$add_argument("outfile", nargs=1, help="Output file name (with no file ext
 
 args=parser$parse_args()
 
-manqq::run_manqq(
+manqq::manqq_cli(
     infile = args$infile,
     outfile = args$outfile,
     chr = args$chr_col,
