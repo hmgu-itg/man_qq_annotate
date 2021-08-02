@@ -1,41 +1,16 @@
-
-manqq.qqplot = function(outfile, pvalue, signif = 5e-8, build = 38, image.type = 'png') {
-  ret = qqplot(pvalue)
-
-  nn = length(pvalue)
-  upper=rep(NA, nrow(ret))
-  lower=rep(NA, nrow(ret))
-  k=0
-  for (i in ret$order){
-    k=k+1
-    upper[k]=qbeta(0.95, i, nn-i+1)
-    lower[k]=qbeta(0.05, i, nn-i+1)
-  }
-
+save_qqplot = function(outfile, pvalue, signif = 5e-8, image.type = 'png') {
   qqfile = paste0(outfile, ".qq.", image.type)
   if(image.type=="pdf") {
     pdf(qqfile)
   } else if(image.type=="png") {
     png(qqfile)
   }
-  plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
-  xx = -log10((ret$order)/(nn+1))
-  polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
-  lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
-  lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
-  lambdavalue = lambdaCalc(pvalue)
-  # Save lambda value to a separate file
-  lambdafile=paste0(outfile, ".lambda.txt")
-  cat(paste(qqfile, lambdavalue, sep='\t'), file=lambdafile, sep="\n")
-
-  text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
-  abline(a=0, b=1, col="firebrick", lwd=2)
-  points(ret$x, ret$y, pch=20, col="dodgerblue4")
+  qqplot(pvalue, signif = 5e-8)
   dev.off()
   return(NULL)
 }
 
-qqplot = function(data, X_GRID=800, Y_GRID=800){
+compute_qqplot = function(data, X_GRID=800, Y_GRID=800){
   ### QQ plot
   ## Expects data to be a vector of p values
   print("entering qq function")
@@ -82,6 +57,32 @@ qqplot = function(data, X_GRID=800, Y_GRID=800){
   return(data.frame(x=newx, y=newy, order=ord))
 }
 
+#' @export
+qqplot = function(pvalue, signif = 5e-8) {
+  ret = compute_qqplot(pvalue)
+  nn = length(pvalue)
+  upper=rep(NA, nrow(ret))
+  lower=rep(NA, nrow(ret))
+  k=0
+  for (i in ret$order){
+    k=k+1
+    upper[k]=qbeta(0.95, i, nn-i+1)
+    lower[k]=qbeta(0.05, i, nn-i+1)
+  }
+
+  plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+  xx = -log10((ret$order)/(nn+1))
+  polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
+  lines(xx, -log10(upper), col="gray", lty=2, lwd=2)
+  lines(xx, -log10(lower), col="gray", lty=2, lwd=2)
+  lambdavalue = lambdaCalc(pvalue)
+
+
+  text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
+  abline(a=0, b=1, col="firebrick", lwd=2)
+  points(ret$x, ret$y, pch=20, col="dodgerblue4")
+  return(NULL)
+}
 
 lambdaCalc = function(pval, round=NULL) {
   lambda = median(qchisq(pval, 1, lower.tail = T), na.rm=T) / qchisq(0.5, 1)
