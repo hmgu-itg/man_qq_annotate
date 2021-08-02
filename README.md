@@ -2,14 +2,12 @@
 Creates Manhattan and QQ plots with annotated peaks for sequencing-based GWAS outputs, by thinning the dataset to what the eye can see.
 
 ## Installation
-Clone the repository and install using `devtools`
-```bash
-git clone https://github.com/hmgu-itg/man_qq_annotate.git
-cd man_qq_annotate
-
+Install using `devtools` (in R):
+```R
 # Install devtools if you don't have it
-# R -e 'install.packages('devtools')
-R -e 'library(devtools) ; install()'
+install.packages('devtools')
+library(devtools)
+install_github("hmgu-itg/man_qq_annotate")
 ```
 ## Usage
 You can either use the CLI or load the package into your R environment.
@@ -94,11 +92,18 @@ library(manqq)
 ls('package:manqq')
 ```
 ```
-[1] "manqq_cli"      "run_manqq.gcta"
+[1] "manqq_cli"      "qqplot"
 ```
 
 Currently, only two functions are exported and available for users. The other functions are all hidden and only used internally within the package. If there are any particular functionality you wish to use from the package, please make a request in the [issue page](https://github.com/hmgu-itg/man_qq_annotate/issues).
 
+#### Creating a QQ-plot 
+
+```R
+## example using a simulated null GWAS with 10,000 SNPs
+library(manqq)
+qqplot(runif(10000))
+```
 
 
 
