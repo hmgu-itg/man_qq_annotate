@@ -1,11 +1,11 @@
-save_qqplot = function(outfile, pvalue, signif = 5e-8, image.type = 'png') {
+save_qqplot = function(outfile, pvalue, image.type = 'png') {
   qqfile = paste0(outfile, ".qq.", image.type)
   if(image.type=="pdf") {
     pdf(qqfile)
   } else if(image.type=="png") {
     png(qqfile)
   }
-  qqplot(pvalue, signif = 5e-8)
+  qqplot(pvalue)
   dev.off()
   return(NULL)
 }
@@ -57,8 +57,18 @@ compute_qqplot = function(data, X_GRID=800, Y_GRID=800){
   return(data.frame(x=newx, y=newy, order=ord))
 }
 
+#' Display a QQ-plot of a p-value vector from a GWAS
+#'
+#' @param pvalue A vector of p-values
+#' @param X_GRID The horizontal resolution of the grid used to simplify the plot. 800 is good for most cases. 
+#' @param Y_GRID The vertical resolution of the grid used to simplify the plot. 800 is good for most cases. 
+#' @return NULL
+#' @examples
+#' library(data.table)
+#' mygwas=read.table("GWAS.GEMMA.assoc.txt.gz")
+#' qqplot(mygwas$P_SCORE)
 #' @export
-qqplot = function(pvalue, signif = 5e-8) {
+qqplot = function(pvalue, X_GRID=800, Y_GRID=800) {
   ret = compute_qqplot(pvalue)
   nn = length(pvalue)
   upper=rep(NA, nrow(ret))
