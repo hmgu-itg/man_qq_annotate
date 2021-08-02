@@ -64,9 +64,11 @@ compute_qqplot = function(data, X_GRID=800, Y_GRID=800){
 #' @param Y_GRID The vertical resolution of the grid used to simplify the plot. 800 is good for most cases. 
 #' @return NULL
 #' @examples
+#' \donttest{
 #' library(data.table)
 #' mygwas=read.table("GWAS.GEMMA.assoc.txt.gz")
 #' qqplot(mygwas$P_SCORE)
+#' }
 #' @export
 qqplot = function(pvalue, X_GRID=800, Y_GRID=800) {
   ret = compute_qqplot(pvalue)
