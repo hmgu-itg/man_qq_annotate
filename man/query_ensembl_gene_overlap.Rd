@@ -15,6 +15,9 @@ query_ensembl_gene_overlap(chr, start, end, build = 38)
 
 \item{build}{The assembly to query}
 }
+\value{
+data.frame with query results. Empty data.frame returned if no overlap
+}
 \description{
 Query Ensembl for overlapping genes in a given genomic region
 }
