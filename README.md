@@ -18,7 +18,7 @@ You can either use the CLI or load the package into your R environment.
 Once installed, you can use the `manqq_cli` script in the base of the repository as a command line tool.  
 For a GCTA output, use the following:
 ```
-./run_manqq.R --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
+./manqq_cli --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
 ```
 You can add `run_manqq.R` to your `PATH` variable for convenient execution: 
 ```bash
