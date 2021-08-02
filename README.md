@@ -15,7 +15,7 @@ R -e 'library(devtools) ; install()'
 You can either use the CLI or load the package into your R environment.
 
 ### Command Line Interface (CLI)
-Once installed, you can use the `run_manqq.R` script in the base of the repository as a command line tool.  
+Once installed, you can use the `manqq_cli` script in the base of the repository as a command line tool.  
 For a GCTA output, use the following:
 ```
 ./run_manqq.R --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
@@ -30,7 +30,7 @@ echo 'export PATH="/path/to/man_qq_annotate:$PATH"' >> ~/.bashrc
 Input files can be gzipped or plain. Run without arguments for a list of options, run with `--help` for detailed options:
 
 ```bash
-usage: ./run_manqq.R [-h] [--chr-col [character]] [--pval-col [character]]
+usage: ./manqq_cli   [-h] [--chr-col [character]] [--pval-col [character]]
                      [--pos-col [character]] [--a1 [character]]
                      [--a2 [character]] [--build [integer]]
                      [--image [character]] [--af-col [character]]
@@ -94,7 +94,7 @@ library(manqq)
 ls('package:manqq')
 ```
 ```
-[1] "run_manqq"      "run_manqq.gcta"
+[1] "manqq_cli"      "run_manqq.gcta"
 ```
 
 Currently, only two functions are exported and available for users. The other functions are all hidden and only used internally within the package. If there are any particular functionality you wish to use from the package, please make a request in the [issue page](https://github.com/hmgu-itg/man_qq_annotate/issues).
