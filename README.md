@@ -20,7 +20,7 @@ For a GCTA output, use the following:
 ```
 ./manqq_cli --chr-col Chr --pval-col p --pos-col bp --a1 A1 --a2 A2 --build 38 --image png --af-col Freq input.assoc.txt.gz output.prefix
 ```
-You can add `run_manqq.R` to your `PATH` variable for convenient execution: 
+You can add `manqq_cli` to your `PATH` variable for convenient execution: 
 ```bash
 export PATH="/path/to/man_qq_annotate:$PATH"
 # Or to make this permanent:
