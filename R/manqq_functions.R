@@ -12,7 +12,7 @@ maf.filter = function(data, maf = 0.0) {
 }
 
 #' @export
-run_manqq = function(infile,
+manqq_cli = function(infile,
                      outfile,
                      chr,
                      pos,
@@ -74,7 +74,7 @@ run_manqq = function(infile,
   # Exclude variants with p value NA or 0
   data = refine_data(data)
   # Make QQ-Plot 
-  if (!no_qq) manqq.qqplot(outfile, data[, p], image.type)
+  if (!no_qq) save_qqplot(outfile, data[, p], image.type)
   # Make Manhattan Plot
   if (!no_man) manqq.manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
 }
@@ -85,46 +85,46 @@ refine_data = function(data) {
   return(data)
 }
 
-#' @export
-run_manqq.gcta = function(infile,
-                          outfile,
-                          maf=0.0,
-                          signif=5e-8,
-                          maxpeaks=30,
-                          no_qq=FALSE,
-                          no_man=FALSE,
-                          no_annot=FALSE,
-                          no_distance=FALSE,
-                          man_height=6,
-                          upper_margin=2.0,
-                          annot_cex=1.1,
-                          axes_cex=1.3,
-                          ylim=-1,
-                          build=38,
-                          image='png') {
-  run_manqq(infile,
-            outfile,
-            'Chr',
-            'bp',
-            'A1',
-            'A2',
-            'p',
-            'Freq',
-            maf,
-            signif,
-            maxpeaks,
-            no_qq,
-            no_man,
-            no_annot,
-            no_distance,
-            man_height,
-            upper_margin,
-            annot_cex,
-            axes_cex,
-            ylim,
-            build,
-            image)
-}
+# #' @export
+# run_manqq.gcta = function(infile,
+#                           outfile,
+#                           maf=0.0,
+#                           signif=5e-8,
+#                           maxpeaks=30,
+#                           no_qq=FALSE,
+#                           no_man=FALSE,
+#                           no_annot=FALSE,
+#                           no_distance=FALSE,
+#                           man_height=6,
+#                           upper_margin=2.0,
+#                           annot_cex=1.1,
+#                           axes_cex=1.3,
+#                           ylim=-1,
+#                           build=38,
+#                           image='png') {
+#   run_manqq(infile,
+#             outfile,
+#             'Chr',
+#             'bp',
+#             'A1',
+#             'A2',
+#             'p',
+#             'Freq',
+#             maf,
+#             signif,
+#             maxpeaks,
+#             no_qq,
+#             no_man,
+#             no_annot,
+#             no_distance,
+#             man_height,
+#             upper_margin,
+#             annot_cex,
+#             axes_cex,
+#             ylim,
+#             build,
+#             image)
+# }
 
 ###############################################################################
 # A generalised function for running a query against the ensembl rest API,this#
