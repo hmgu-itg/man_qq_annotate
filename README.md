@@ -92,7 +92,7 @@ library(manqq)
 ls('package:manqq')
 ```
 ```
-[1] "manqq_cli"      "qqplot"
+[1] "manqq_cli"      "fastqq"
 ```
 
 Currently, only two functions are exported and available for users. The other functions are all hidden and only used internally within the package. If there are any particular functionality you wish to use from the package, please make a request in the [issue page](https://github.com/hmgu-itg/man_qq_annotate/issues).
@@ -102,7 +102,7 @@ Currently, only two functions are exported and available for users. The other fu
 ```R
 ## example using a simulated null GWAS with 10,000 SNPs
 library(manqq)
-qqplot(runif(10000))
+fastqq(runif(10000))
 ```
 
 
