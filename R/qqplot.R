@@ -5,7 +5,7 @@ save_qqplot = function(outfile, pvalue, image.type = 'png') {
   } else if(image.type=="png") {
     png(qqfile)
   }
-  qqplot(pvalue)
+  fastqq(pvalue)
   dev.off()
   return(NULL)
 }
@@ -70,7 +70,7 @@ compute_qqplot = function(data, X_GRID=800, Y_GRID=800){
 #' qqplot(mygwas$P_SCORE)
 #' }
 #' @export
-qqplot = function(pvalue, X_GRID=800, Y_GRID=800) {
+fastqq = function(pvalue, X_GRID=800, Y_GRID=800) {
   ret = compute_qqplot(pvalue)
   nn = length(pvalue)
   upper=rep(NA, nrow(ret))
