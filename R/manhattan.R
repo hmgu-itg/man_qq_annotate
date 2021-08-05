@@ -1,6 +1,6 @@
 
 
-manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30, build = 38, image.type = 'png', no_distance = FALSE, no_annot = FALSE) {
+save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30, build = 38, image.type = 'png', no_distance = FALSE, no_annot = FALSE) {
 
   mhp.file = paste0(outfile, ".man.", image.type)
   if(image.type=="pdf") {
@@ -8,9 +8,28 @@ manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30
   } else if(image.type=="png") {
     png(mhp.file, width=10, height = height, units="in", res=300)
   }
+  fastmanh(data, signif, build, maxpeaks, no_distance, no_annot)
+  dev.off()
+}
 
-  retm = mhp(data[,chr], data[,pos], data[,p], signif=signif)
-  print("Finding peaks...")
+#' Plots an optimised Manhattan plot
+#'
+#' @param data A data.table containing columns `chr`, `pos`, `p`
+#' @param signif significance threshold to use. Defaults to 5e-8
+#' @param build genomic build. Default 38. Can be 37.
+#' @param maxpeaks The first `maxpeaks` signals in terms of p-value will be displayed. Increasing this may clutter the plot.
+#' @param no_distance do not display distances in plot, default FALSE.
+#' @param no_annot do not compute annotations using VEP. default FALSE.
+#' @return A list with 'retm' and 'peaks' attributes. The former is the optimised manhattan object, the latter is the peak object.
+fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE){
+  retm = compute_manhattan(data[,chr], data[,pos], data[,p], signif=signif)
+  peaks=construct_peaks(retm, data, build, signif, maxpeaks, no_distance, no_annot)
+  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks)  
+  return(list(retm, peaks))
+}
+
+construct_peaks = function (retm, data, build, signif, maxpeaks, no_distance, no_annot){
+   print("Finding peaks...")
   peaks = get_peaks_to_annotate(retm, data, build=build, signif=signif)
   print(paste0("Number of peaks: ", nrow(peaks)))
 
@@ -68,13 +87,9 @@ manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30
     peaks$col[peaks$consequence %in% intronic]="brown"
     peaks$pch[peaks$consequence %in% intergenic]=19
     peaks$col[peaks$consequence %in% intergenic]="darkgray"
-  }
-
-  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks)
-  dev.off()
+  } 
+  return(peaks)
 }
-
-
 
 #' Make manhattan object
 #'
@@ -85,7 +100,7 @@ manqq.manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30
 #' @param Y_RES
 #' @param signif Significance threshold (default: 5e-8)
 #' @return A list with 'newcoords', 'posdict', and 'labpos' attributes
-mhp = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
+compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
   ## chr, ps and p_lrt, representing
@@ -346,13 +361,13 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
 
 #' Get peaks to annotate
 #'
-#' @param manhattan_object Output object of `mhp` function
+#' @param manhattan_object Output object of `compute_manhattan` function
 #' @param assoc data.table with columns chr, pos, a1, a2, p, and af
 #' @param signif Significance threshold (default: 5e-8)
 #' @param build Genome assembly number (38 or 37)
 #' @return A data.table with columns: plotpos, ploty, p, build
 get_peaks_to_annotate = function (manhattan_object, assoc, signif = 5e-8, build = 38){
-  # expects an object from the mhp function
+  # expects an object from the compute_manhattan function
   ret=NULL
   retm=manhattan_object
   sig=unique(retm$newcoords$x[retm$newcoords$y>-log10(signif)])
