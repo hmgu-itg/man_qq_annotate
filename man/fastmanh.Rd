@@ -14,23 +14,23 @@ fastmanh(
 )
 }
 \arguments{
-\item{data}{A data.table containing columns `chr`, `pos`, `p`}
+\item{data}{A data.table containing columns \code{"chr"}, \code{"pos"}, \code{"p"}}
 
 \item{signif}{significance threshold to use. Defaults to 5e-8}
 
 \item{build}{genomic build. Default 38. Can be 37.}
 
-\item{maxpeaks}{The first `maxpeaks` signals in terms of p-value will be displayed. Increasing this may clutter the plot.}
+\item{maxpeaks}{The first \code{"maxpeaks"} signals in terms of p-value will be displayed. Increasing this may clutter the plot.}
 
 \item{no_distance}{do not display distances in plot, default FALSE.}
 
 \item{no_annot}{do not compute annotations using VEP. default FALSE.}
 }
 \value{
-A list with 'retm' and 'peaks' attributes. The former is the optimised manhattan object, the latter is the peak object.
+A list with \code{"retm"} and \code{"peaks"} attributes. The former is the optimised manhattan object, the latter is the peak object.
 }
 \description{
-A traditional Manhattan plot will contain a point for each variant. This is unnecessary, since the scale of the genome makes many points overlap in a human-sized plot. `fastmanh` addressed this by thinning the data frame to only visible points.
+A traditional Manhattan plot will contain a point for each variant. This is unnecessary, since the scale of the genome makes many points overlap in a human-sized plot. \code{"fastmanh"} addresses this by thinning the data frame to only visible points.
 }
 \examples{
 \donttest{
