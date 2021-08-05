@@ -14,15 +14,15 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
 
 #' Plots an optimised Manhattan plot
 #'
-#' A traditional Manhattan plot will contain a point for each variant. This is unnecessary, since the scale of the genome makes many points overlap in a human-sized plot. `fastmanh` addressed this by thinning the data frame to only visible points.
+#' A traditional Manhattan plot will contain a point for each variant. This is unnecessary, since the scale of the genome makes many points overlap in a human-sized plot. \code{"fastmanh"} addresses this by thinning the data frame to only visible points.
 #'
-#' @param data A data.table containing columns `chr`, `pos`, `p`
+#' @param data A data.table containing columns \code{"chr"}, \code{"pos"}, \code{"p"}
 #' @param signif significance threshold to use. Defaults to 5e-8
 #' @param build genomic build. Default 38. Can be 37.
-#' @param maxpeaks The first `maxpeaks` signals in terms of p-value will be displayed. Increasing this may clutter the plot.
+#' @param maxpeaks The first \code{"maxpeaks"} signals in terms of p-value will be displayed. Increasing this may clutter the plot.
 #' @param no_distance do not display distances in plot, default FALSE.
 #' @param no_annot do not compute annotations using VEP. default FALSE.
-#' @return A list with 'retm' and 'peaks' attributes. The former is the optimised manhattan object, the latter is the peak object.
+#' @return A list with \code{"retm"} and \code{"peaks"} attributes. The former is the optimised manhattan object, the latter is the peak object.
 #' @examples
 #' \donttest{
 #' library(data.table)
