@@ -12,8 +12,9 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
   dev.off()
 }
 
-#' @export
 #' Plots an optimised Manhattan plot
+#'
+#' A traditional Manhattan plot will contain a point for each variant. This is unnecessary, since the scale of the genome makes many points overlap in a human-sized plot. `fastmanh` addressed this by thinning the data frame to only visible points.
 #'
 #' @param data A data.table containing columns `chr`, `pos`, `p`
 #' @param signif significance threshold to use. Defaults to 5e-8
@@ -29,6 +30,7 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
 #' setnames(mygwas, c("ps", "p_score"), c("pos", "p"))
 #' fastmanh(mygwas)
 #' }
+#' @export
 fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE){
   retm = compute_manhattan(data[,chr], data[,pos], data[,p], signif=signif)
   peaks=construct_peaks(retm, data, build, signif, maxpeaks, no_distance, no_annot)
