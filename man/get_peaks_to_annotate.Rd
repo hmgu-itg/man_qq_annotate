@@ -7,7 +7,7 @@
 get_peaks_to_annotate(manhattan_object, assoc, signif = 5e-08, build = 38)
 }
 \arguments{
-\item{manhattan_object}{Output object of `mhp` function}
+\item{manhattan_object}{Output object of `compute_manhattan` function}
 
 \item{assoc}{data.table with columns chr, pos, a1, a2, p, and af}
 
