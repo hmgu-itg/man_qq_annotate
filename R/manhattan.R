@@ -12,6 +12,7 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
   dev.off()
 }
 
+#' @export
 #' Plots an optimised Manhattan plot
 #'
 #' @param data A data.table containing columns `chr`, `pos`, `p`
@@ -21,6 +22,13 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
 #' @param no_distance do not display distances in plot, default FALSE.
 #' @param no_annot do not compute annotations using VEP. default FALSE.
 #' @return A list with 'retm' and 'peaks' attributes. The former is the optimised manhattan object, the latter is the peak object.
+#' @examples
+#' \donttest{
+#' library(data.table)
+#' mygwas=read.table("GWAS.GEMMA.assoc.txt.gz")
+#' setnames(mygwas, c("ps", "p_score"), c("pos", "p"))
+#' fastmanh(mygwas)
+#' }
 fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE){
   retm = compute_manhattan(data[,chr], data[,pos], data[,p], signif=signif)
   peaks=construct_peaks(retm, data, build, signif, maxpeaks, no_distance, no_annot)
