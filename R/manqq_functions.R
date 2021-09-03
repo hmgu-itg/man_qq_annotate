@@ -6,10 +6,17 @@ read.assoc.file = function(filepath, chr, pos, a1, a2, pval, af) {
   return(data)
 }
 
-
 maf.filter = function(data, maf = 0.0) {
-  return(data[af>=maf])
+  ret=data[af>=maf]
+  return(ret)
 }
+
+refine_data = function(data) {
+  data[,p:=as.numeric(p)]
+  data = data[!(is.na(p)) & p!=0]
+  return(data)
+}
+
 
 #' @export
 manqq_cli = function(infile,
@@ -74,16 +81,11 @@ manqq_cli = function(infile,
   # Exclude variants with p value NA or 0
   data = refine_data(data)
   # Make QQ-Plot 
-  if (!no_qq) save_qqplot(outfile, data[, p], image.type)
+  if (!no_qq) save_qqplot(outfile, data[, p], image)
   # Make Manhattan Plot
-  if (!no_man) manqq.manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
+  if (!no_man) save_manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
 }
 
-refine_data = function(data) {
-  data$p = as.numeric(data[, p])
-  data = data[!(is.na(p)) & p!=0]
-  return(data)
-}
 
 # #' @export
 # run_manqq.gcta = function(infile,
