@@ -1,4 +1,6 @@
 
+.datatable.aware <- TRUE
+
 read.assoc.file = function(filepath, chr, pos, a1, a2, pval, af) {
   data = data.table::fread(filepath, select=c(chr, pos, a1, a2, pval, af))
   data.table::setcolorder(data, c(chr, pos, a1, a2, pval, af))
