@@ -97,7 +97,7 @@ fastqq = function(pvalue, X_GRID=800, Y_GRID=800) {
 }
 
 lambdaCalc = function(pval, round=NULL) {
-  lambda = median(qchisq(pval, 1, lower.tail = T), na.rm=T) / qchisq(0.5, 1)
+  lambda = median(qchisq(pval, 1, lower.tail = F), na.rm=T) / qchisq(0.5, 1)
 
   if (is.null(round)==FALSE) {
     lambda=round(lambda,round)
