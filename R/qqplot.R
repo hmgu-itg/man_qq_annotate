@@ -93,7 +93,7 @@ fastqq = function(pvalue, X_GRID=800, Y_GRID=800) {
   text(substitute(paste(lambda, "=", lambdaval), list(lambdaval=lambdavalue)), x=1, y=max(ret$y)-1, cex=1.5)
   abline(a=0, b=1, col="firebrick", lwd=2)
   points(ret$x, ret$y, pch=20, col="dodgerblue4")
-  return(NULL)
+  return(lambdavalue)
 }
 
 lambdaCalc = function(pval, round=NULL) {
