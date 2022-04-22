@@ -8,7 +8,7 @@ save_qqplot = function(outfile, pvalue, image.type = 'png', title="") {
   lambdavalue = fastqq(pvalue, title=title)
   # Save lambda value to a separate file
   lambdafile=paste0(outfile, ".lambda.txt")
-  cat(lambdavalue), file=lambdafile, sep="\n")
+  cat(lambdavalue, file=lambdafile, sep="\n")
 
   dev.off()
   return(NULL)
