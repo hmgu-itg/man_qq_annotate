@@ -1,11 +1,11 @@
-save_qqplot = function(outfile, pvalue, image.type = 'png') {
+save_qqplot = function(outfile, pvalue, image.type = 'png', title="") {
   qqfile = paste0(outfile, ".qq.", image.type)
   if(image.type=="pdf") {
     pdf(qqfile)
   } else if(image.type=="png") {
     png(qqfile)
   }
-  fastqq(pvalue)
+  fastqq(pvalue, title=title)
   dev.off()
   return(NULL)
 }
@@ -70,7 +70,7 @@ compute_qqplot = function(data, X_GRID=800, Y_GRID=800){
 #' qqplot(mygwas$P_SCORE)
 #' }
 #' @export
-fastqq = function(pvalue, X_GRID=800, Y_GRID=800) {
+fastqq = function(pvalue, X_GRID=800, Y_GRID=800, title="") {
   ret = compute_qqplot(pvalue)
   nn = length(pvalue)
   upper=rep(NA, nrow(ret))
@@ -82,7 +82,7 @@ fastqq = function(pvalue, X_GRID=800, Y_GRID=800) {
     lower[k]=qbeta(0.05, i, nn-i+1)
   }
 
-  plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles")
+  plot(ret$x, ret$y, pch=20, col="darkslategray", type="n", xlab="Expected quantiles", ylab="Observed quantiles", main=title)
   xx = -log10((ret$order)/(nn+1))
   polygon(c(xx, rev(xx)), c(-log10(upper), -log10(rev(lower))), border=NA, col="gray80")
   lines(xx, -log10(upper), col="gray", lty=2, lwd=2)

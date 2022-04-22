@@ -14,4 +14,4 @@ From: thomaschln/r-devtools
 
 
 %runscript
-  exec run_manqq.R "$@"
+  exec manqq_cli "$@"

@@ -122,6 +122,12 @@ parser$add_argument("--ylim",
                     help="The y-axis limit (-log10(p))",
                     metavar="[double]")
 
+parser$add_argument("--qq-title",
+                    type="character",
+                    default="",
+                    help="Title for the QQ-plot image",
+                    metavar="[character]")
+
 # The input file used to create the plots
 parser$add_argument("infile", nargs=1, help="Input file name, must be gzip file")
 
@@ -152,5 +158,6 @@ manqq::manqq_cli(
     axes_cex = args$axes_cex,
     ylim = args$ylim,
     build = args$build,
-    image = args$image
+    image = args$image,
+    qq_title = args$qq_title
 )

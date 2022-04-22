@@ -42,7 +42,8 @@ manqq_cli = function(infile,
                      axes_cex=1.3,
                      ylim=-1,
                      build=38,
-                     image='png') {
+                     image='png',
+                     qq_title='') {
   # Prepare run config storage
   conf.file = paste0(outfile, '.run_conf')
   cat.conf.file = function(text, append = TRUE) {
@@ -75,6 +76,7 @@ manqq_cli = function(infile,
   cat.conf.file(paste0('ylim: ', ylim))
   cat.conf.file(paste0('build: ', build))
   cat.conf.file(paste0('image: ', image))
+  cat.conf.file(paste0('qq_title: ', qq_title))
 
   # Load input data
   data = read.assoc.file(infile, chr, pos, a1, a2, pval, af)
