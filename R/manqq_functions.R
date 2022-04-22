@@ -85,7 +85,7 @@ manqq_cli = function(infile,
   # Exclude variants with p value NA or 0
   data = refine_data(data)
   # Make QQ-Plot 
-  if (!no_qq) save_qqplot(outfile, data[, p], image)
+  if (!no_qq) save_qqplot(outfile, data[, p], image, title=qq_title)
   # Make Manhattan Plot
   if (!no_man) save_manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
 }
