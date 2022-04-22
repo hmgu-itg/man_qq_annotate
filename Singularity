@@ -6,11 +6,11 @@ From: thomaschln/r-devtools
 
 %post
   apt-get update
-  apt-get install -y git libxtst6
+  apt-get install -y git libxtst6 libxt6
   cd /opt
   git clone https://github.com/hmgu-itg/man_qq_annotate.git
   cd man_qq_annotate
-  R -e 'library(devtools); install()'
+  Rscript -e 'library(devtools); install()'
 
 
 %runscript
