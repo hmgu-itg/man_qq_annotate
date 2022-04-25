@@ -128,6 +128,12 @@ parser$add_argument("--qq-title",
                     help="Title for the QQ-plot image",
                     metavar="[character]")
 
+parser$add_argument("--manh-title",
+                    type="character",
+                    default="",
+                    help="Title for the Manhattan plot image",
+                    metavar="[character]")
+
 # The input file used to create the plots
 parser$add_argument("infile", nargs=1, help="Input file name, must be gzip file")
 
@@ -159,5 +165,6 @@ manqq::manqq_cli(
     ylim = args$ylim,
     build = args$build,
     image = args$image,
-    qq_title = args$qq_title
+    qq_title = args$qq_title,
+    manh_title = args$manh_title
 )

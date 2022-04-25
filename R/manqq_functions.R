@@ -43,7 +43,8 @@ manqq_cli = function(infile,
                      ylim=-1,
                      build=38,
                      image='png',
-                     qq_title='') {
+                     qq_title='',
+                     manh_title='') {
   # Prepare run config storage
   conf.file = paste0(outfile, '.run_conf')
   cat.conf.file = function(text, append = TRUE) {
@@ -77,6 +78,7 @@ manqq_cli = function(infile,
   cat.conf.file(paste0('build: ', build))
   cat.conf.file(paste0('image: ', image))
   cat.conf.file(paste0('qq_title: ', qq_title))
+  cat.conf.file(paste0('manh_title: ', manh_title))
 
   # Load input data
   data = read.assoc.file(infile, chr, pos, a1, a2, pval, af)
@@ -87,7 +89,16 @@ manqq_cli = function(infile,
   # Make QQ-Plot 
   if (!no_qq) save_qqplot(outfile, data[, p], image, title=qq_title)
   # Make Manhattan Plot
-  if (!no_man) save_manhattan(data, outfile, height = man_height, signif = signif, maxpeaks = maxpeaks, build = build, image.type = image, no_distance = no_distance, no_annot = no_annot)
+  if (!no_man) save_manhattan(data,
+                              outfile,
+                              height = man_height,
+                              signif = signif,
+                              maxpeaks = maxpeaks,
+                              build = build,
+                              image.type = image,
+                              no_distance = no_distance,
+                              no_annot = no_annot,
+                              title = manh_title)
 }
 
 

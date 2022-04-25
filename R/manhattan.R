@@ -1,6 +1,15 @@
 
 
-save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30, build = 38, image.type = 'png', no_distance = FALSE, no_annot = FALSE) {
+save_manhattan = function(data,
+                          outfile,
+                          height=6,
+                          signif = 5e-8,
+                          maxpeaks = 30,
+                          build = 38,
+                          image.type = 'png',
+                          no_distance = FALSE,
+                          no_annot = FALSE,
+                          title = '') {
 
   mhp.file = paste0(outfile, ".man.", image.type)
   if(image.type=="pdf") {
@@ -8,7 +17,7 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
   } else if(image.type=="png") {
     png(mhp.file, width=10, height = height, units="in", res=300)
   }
-  fastmanh(data, signif, build, maxpeaks, no_distance, no_annot)
+  fastmanh(data, signif, build, maxpeaks, no_distance, no_annot, title)
   dev.off()
 }
 
@@ -31,10 +40,10 @@ save_manhattan = function(data, outfile, height=6, signif = 5e-8, maxpeaks = 30,
 #' fastmanh(mygwas)
 #' }
 #' @export
-fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE){
+fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE, title = ''){
   retm = compute_manhattan(data[,chr], data[,pos], data[,p], signif=signif)
   peaks=construct_peaks(retm, data, build, signif, maxpeaks, no_distance, no_annot)
-  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks)  
+  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks, title)
   return(list(retm, peaks))
 }
 
@@ -420,14 +429,15 @@ plot_manhattan = function(manhattan_object,
                           upper_margin = 2.0,
                           ylim = -1.0,
                           annot_cex = 1.1,
-                          axes_cex = 1.3) {
+                          axes_cex = 1.3,
+                          title = '') {
   yl=ifelse(!is.null(annotation_object), upper_margin*max(manhattan_object$newcoords$y), max(manhattan_object$newcoords$y))
   yl=ifelse(ylim>-1, ylim, yl)
   print(max(manhattan_object$newcoords$y))
 
   plot(manhattan_object$newcoords$x, manhattan_object$newcoords$y,
     pch=20, col=as.character(manhattan_object$newcoords$col), xlab="",
-    axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="")
+    axes=F,bty="n", ylim=c(0, yl), yaxt="n", ylab="", main = title)
 
   axis(2, las=1, cex=1.5,at=seq(0, 2*(max(manhattan_object$newcoords$y)%/%2+1), by=2))
   mtext(expression(paste("-log"[10], "(p)")), side=2, line=2.5, at=(max(manhattan_object$newcoords$y)%/%2+1), cex=axes_cex)
