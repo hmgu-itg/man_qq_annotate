@@ -43,7 +43,7 @@ save_manhattan = function(data,
 fastmanh = function(data, signif = 5e-8, build = 38, maxpeaks = 30, no_distance = FALSE, no_annot = FALSE, title = ''){
   retm = compute_manhattan(data[,chr], data[,pos], data[,p], signif=signif)
   peaks=construct_peaks(retm, data, build, signif, maxpeaks, no_distance, no_annot)
-  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks, title)
+  plot_manhattan(retm, peaks, signif=signif, MAX_NUM_PEAKS=maxpeaks, title=title)
   return(list(retm, peaks))
 }
 
