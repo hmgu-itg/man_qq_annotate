@@ -123,7 +123,7 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
   ## chr, ps and p_lrt, representing
-  obspval <- as.numeric(p)
+ obspval <- as.numeric(p)
   chr <- as.numeric(chr)
   pos <- as.numeric(ps)
   print(length(chr))
@@ -134,20 +134,22 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   pos <- pos[sort.ind]
   obspval <- obspval[sort.ind]
 
-  ## Two main vectors for new coordinates, should not be more than picture resolution
-  newx=rep(NA, X_RES*Y_RES)
-  newy=rep(NA, X_RES*Y_RES)
-  size=0
-  mi=0
-  ma=0
-  t=list()
-  posdict=list()
-
-
+  ## Get unique chromosomes
+  chromosomes <- sort(unique(chr))
+  num_chromosomes <- length(chromosomes)
+  
+  ## Initialize variables
+  t <- vector("list", num_chromosomes)
+  mi <- numeric(num_chromosomes)
+  ma <- numeric(num_chromosomes)
+  size <- numeric(num_chromosomes + 1)
+  numpoints <- numeric(num_chromosomes + 1)
+  labpos <- numeric(num_chromosomes)
+  posdict <- vector("list", num_chromosomes)
+  
   xres=(3000000000/X_RES)*2
   yres=(obsmax/Y_RES)*2
   breaksy=seq(0, obsmax, by=yres)
-  ## Transforming the p-values and defining plot colors
   locY = -log10(obspval)
   col=rep(NA, X_RES*Y_RES)
   col1=rgb(0,0,108,maxColorValue=255)
@@ -156,81 +158,48 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   coli=rgb(255, 255, 255, maxColorValue=255, alpha=0)
   posi=1
   s=1
-
-
-  ## Initializing variables for the main loop
   size=0
   numpoints=0
   labpos=0
 
-
-  for ( i in 1:22 ){
-    curchr=which(chr==i)
-    curcol=ifelse (i%%2==0, col1, col2)
-
-    t[[i]]=pos[curchr]
-
-    # min and max pos and size of cur chr
-    mi[i]=min(t[[i]])
-    ma[i]=max(t[[i]])
-    size[i+1]=ma[i]-mi[i]
-    numpoints[i+1]=length(t[[i]])
-
-    ## Correcting positions: subtracting the start offset and adding length of previous chromosomes.
-    ## Elements of T should now be continuous (notice that i is a sum.)
-    offset=sum(size[1:i])
-
-    ## the reassignment permanently destroys all positions so we have to save them
-    posdict[[i]]=data.frame(pos=t[[i]])
-    t[[i]]=(t[[i]]-mi[i])+offset+i
-    posdict[[i]]$newpos=t[[i]]
-
-    ## Label positions (for later)
-    labpos[i]=offset+(max(t[[i]])-min(t[[i]]))/2+((i-1)*12000000)
-
+  for (k in 1:num_chromosomes) {
+    i <- chromosomes[k]
+    curchr <- which(chr == i)
+    curcol <- ifelse(k %% 2 == 0, col1, col2)
+    t[[k]] <- pos[curchr]
+    mi[k] <- min(t[[k]])
+    ma[k] <- max(t[[k]])
+    size[k+1] <- ma[k] - mi[k]
+    numpoints[k+1] <- length(t[[k]])
+    offset <- sum(size[1:k])
+    posdict[[k]] <- data.frame(pos = t[[k]])
+    t[[k]] <- (t[[k]] - mi[k]) + offset + k
+    posdict[[k]]$newpos <- t[[k]]
+    labpos[k] <- offset + (max(t[[k]]) - min(t[[k]]))/2 + ((k-1)*12000000)
+    
     ## Create x grid for current chromosome
-    topvalue=(offset+size[i+1]+i)
-    breaks=seq((offset+i), topvalue, by=xres)
-
-    ## seq does not go till the end if by is specified
+    topvalue=(offset+size[k+1]+k)
+    breaks=seq((offset+k), topvalue, by=xres)
     if(breaks[length(breaks)] != topvalue){breaks=c(breaks, topvalue)}
-
-    ## compute histogram of SNPs according to grid
-    h=hist(t[[i]], breaks=breaks, plot=FALSE)
-
-    ## add in the hist coordinates for reference (multiplies exec time by 2 :/ - sadness!)
-    posdict[[i]]$poscat=cut(posdict[[i]]$newpos, breaks=breaks, labels=h$mids)
-    posdict[[i]]$poscat=as.numeric(as.character(posdict[[i]]$poscat))+((i-1)*12000000)
-    posdict[[i]]$chr=i
-    ## For each interval in this chromosome:
-    ## -get all corresponding y values
-    ## -compute histogram along y grid
-    ## -fill non-zero intervals with single middle value
-
-    baseoffset= sum(numpoints[1:i])
-
+    h=hist(t[[k]], breaks=breaks, plot=FALSE)
+    posdict[[k]]$poscat=cut(posdict[[k]]$newpos, breaks=breaks, labels=h$mids)
+    posdict[[k]]$poscat=as.numeric(as.character(posdict[[k]]$poscat))+((k-1)*12000000)
+    posdict[[k]]$chr=i
+    baseoffset= sum(numpoints[1:k])
     for( j in 1:(length(h$counts)) ){
       suboffset= sum(h$counts[1:j])-h$counts[j]+baseoffset
       subset= locY[(suboffset+1):(suboffset+h$counts[j])]
-
-
       hy= hist(subset, breaks=breaksy, plot=FALSE)
-
-
       addendum= hy$mids[hy$counts>0]
       l= length(addendum)
       if(l==0){next}
-      newx[posi:(posi+l-1)]=rep(h$mids[j], l)+((i-1)*12000000)
+      newx[posi:(posi+l-1)]=rep(h$mids[j], l)+((k-1)*12000000)
       newy[posi:(posi+l-1)]=addendum
       colvect=rep(curcol, l)
       colvect[addendum>-log10(signif)]=col3
       col[posi:(posi+l-1)]=colvect
-
-
       posi= posi+l;
     }
-
-
   }
   posdict=do.call("rbind", posdict)
   u=aggregate(posdict$pos, by=list(posdict$chr, posdict$poscat), FUN=min)
@@ -238,13 +207,10 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   m=merge(u, v, by=c("Group.1", "Group.2"))
   posdict=m
   colnames(posdict)=c("chr", "coord", "min", "max")
-
-  # Remove trailing NAs
-
   newx=zoo::na.trim(newx)
   newy=zoo::na.trim(newy)
   col=zoo::na.trim(col)
-  return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos))
+  return(list(newcoords=data.frame(x=newx, y=newy, col=col), posdict=posdict, labpos=labpos, chromosomes=chromosomes))
 }
 
 
@@ -264,7 +230,16 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   } else if(build==37) {
     server="http://grch37.rest.ensembl.org"
   }
-  ext = paste0("/overlap/region/human/", chr, ":", start, "-", end, "?feature=gene")
+  if (chr == 23) {
+    chr_str <- 'X'
+  } else if (chr == 24) {
+    chr_str <- 'Y'
+  } else if (chr == 25) {
+    chr_str <- 'MT'
+  } else {
+    chr_str <- as.character(chr)
+  }
+  ext = paste0("/overlap/region/human/", chr_str, ":", start, "-", end, "?feature=gene")
   r = httr::GET(paste(server, ext, sep = ""), httr::content_type("application/json"))
   httr::stop_for_status(r)
   restr = jsonlite::fromJSON(jsonlite::toJSON(httr::content(r)))
@@ -274,6 +249,7 @@ query_ensembl_gene_overlap = function(chr, start, end, build=38) {
   }
   return(restr)
 }
+
 
 process_overlap_restr = function(restr) {
   prot_genes = restr[restr$biotype=="protein_coding",]
@@ -325,9 +301,19 @@ get_variant_context = function(chr, pos, a1, a2, build=38) {
   print(paste("getting context for ", chr, ":", pos, a1, a2))
   alleles = c(a1, a2)
   alleles = toupper(alleles)
+  
+  # Map chromosome numbers to strings for Ensembl
+  if (chr == 23) {
+    chr_str <- 'X'
+  } else if (chr == 24) {
+    chr_str <- 'Y'
+  } else if (chr == 25) {
+    chr_str <- 'MT'
+  } else {
+    chr_str <- as.character(chr)
+  }
 
-  restr = query_ensembl_gene_overlap(chr, pos, pos, build)
-
+  restr = query_ensembl_gene_overlap(chr_str, pos, pos, build)
   # Three possible cases:
   # 1. Variant directly overlaps region of protein coding gene(s)
   # 2. Variant is intergenic, but protein coding gene is within 2Mb window (1Mb either side)
@@ -444,46 +430,46 @@ plot_manhattan = function(manhattan_object,
 
   if(!is.null(annotation_object)){
 
-    # sh29: split the peaks into the ones to annotate and the ones to only colour in
-    # peaks.col.only=annotation_object[act=="c"]
-    # annotation_object=annotation_object[act=="a"]
-
     segments(x0=annotation_object$plotpos,
     y0=annotation_object$ploty,
     y1=1.2*max(manhattan_object$newcoords$y), lty=2, lwd=2, col="lightgray")
     espacement=(max(manhattan_object$newcoords$x)-min(manhattan_object$newcoords$x))
     labelslots=seq(min(manhattan_object$newcoords$x), max(manhattan_object$newcoords$x),by=espacement/MAX_NUM_PEAKS)
 
-      labelpos=apply(annotation_object, 1, function(x) {
-        if(length(labelslots)==0) {
-          print("Error: too many peaks.")
-          return(x["plotpos"])
-        }
-        slotdist=abs(labelslots-as.numeric(x["plotpos"]))
-        idx=(1:length(slotdist))[slotdist==min(slotdist)]
-        # print(idx)
-        ret=labelslots[idx]
-        # print(ret)
-        # print(labelslots)
-        labelslots<<-labelslots[-idx]
-        # print(labelslots)
-        return(ret)
-        })
+    labelpos=apply(annotation_object, 1, function(x) {
+      if(length(labelslots)==0) {
+        print("Error: too many peaks.")
+        return(x["plotpos"])
+      }
+      slotdist=abs(labelslots-as.numeric(x["plotpos"]))
+      idx=(1:length(slotdist))[slotdist==min(slotdist)]
+      ret=labelslots[idx]
+      labelslots<<-labelslots[-idx]
+      return(ret)
+      })
 
-      segments(x0=annotation_object$plotpos,x1=labelpos,
-        y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
-        lty=2, lwd=2, col="lightgray")
-      text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
-        srt=45, cex=annot_cex, pos=4, font=4)
-      points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)),
-        pch=annotation_object$pch, col=annotation_object$col, font=2, cex=annot_cex)
+    segments(x0=annotation_object$plotpos,x1=labelpos,
+      y0=1.2*max(manhattan_object$newcoords$y), y1=1.3*max(manhattan_object$newcoords$y),
+      lty=2, lwd=2, col="lightgray")
+    text(annotation_object$truelabels, x=labelpos-1e7, y=1.32*max(manhattan_object$newcoords$y),
+      srt=45, cex=annot_cex, pos=4, font=4)
+    points(x=labelpos, y=rep(1.3*max(manhattan_object$newcoords$y), length(labelpos)),
+      pch=annotation_object$pch, col=annotation_object$col, font=2, cex=annot_cex)
   }
   abline(h=-log10(signif), lwd=2, col="lightgray", lty=3)
-  # axis(2,las=1,cex=1.5)
-  for (i in 1:22){
-    pp=ifelse(i %% 2 == 0, 0, 1)
-    mtext(i,1, line=pp,at=manhattan_object$labpos[i],cex=axes_cex)
+  for (k in 1:length(manhattan_object$chromosomes)){
+    i <- manhattan_object$chromosomes[k]
+    if (i == 23) {
+      chr_label <- 'X'
+    } else if (i == 24) {
+      chr_label <- 'Y'
+    } else if (i == 25) {
+      chr_label <- 'MT'
+    } else {
+      chr_label <- as.character(i)
+    }
+    pp=ifelse(k %% 2 == 0, 0, 1)
+    mtext(chr_label,1, line=pp,at=manhattan_object$labpos[k],cex=axes_cex)
   }
   mtext("Chromosome",1,at=1,cex=axes_cex,line=0)
-
 }
