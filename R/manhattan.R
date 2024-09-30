@@ -123,7 +123,7 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ##Manhat plot
   ## Expects data object to be a list containing three named columns
   ## chr, ps and p_lrt, representing
- obspval <- as.numeric(p)
+  obspval <- as.numeric(p)
   chr <- as.numeric(chr)
   pos <- as.numeric(ps)
   print(length(chr))
@@ -137,7 +137,7 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   ## Get unique chromosomes
   chromosomes <- sort(unique(chr))
   num_chromosomes <- length(chromosomes)
-  
+
   ## Initialize variables
   t <- vector("list", num_chromosomes)
   mi <- numeric(num_chromosomes)
@@ -146,21 +146,22 @@ compute_manhattan = function(chr, ps, p, X_RES=2000, Y_RES=1000, signif=5e-8) {
   numpoints <- numeric(num_chromosomes + 1)
   labpos <- numeric(num_chromosomes)
   posdict <- vector("list", num_chromosomes)
-  
+
   xres=(3000000000/X_RES)*2
   yres=(obsmax/Y_RES)*2
   breaksy=seq(0, obsmax, by=yres)
   locY = -log10(obspval)
+  
+  ## Initialize newx, newy, col
+  newx=rep(NA, X_RES*Y_RES)
+  newy=rep(NA, X_RES*Y_RES)
   col=rep(NA, X_RES*Y_RES)
+  
   col1=rgb(0,0,108,maxColorValue=255)
   col2=rgb(100,149,237,maxColorValue=255)
   col3=rgb(0,205,102,maxColorValue=255)
   coli=rgb(255, 255, 255, maxColorValue=255, alpha=0)
   posi=1
-  s=1
-  size=0
-  numpoints=0
-  labpos=0
 
   for (k in 1:num_chromosomes) {
     i <- chromosomes[k]
